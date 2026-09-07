@@ -1,0 +1,6 @@
+# Hoisted installs: single physical react (and other deps) at the root
+# node_modules, shared by the library and the examples workspace. The default
+# isolated linker uses per-workspace symlinked stores, which the bundler
+# treats as distinct module paths (→ two React copies).
+[install]
+linker = "hoisted"

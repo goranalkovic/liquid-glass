@@ -1,0 +1,86 @@
+{
+	"name": "liquid-glass",
+	"version": "1.0.0",
+	"description": "\"Liquid Glass\"-like refraction for any DOM element using a SVG displacement map-based backdrop-filter, without extra dependencies.",
+	"keywords": [
+		"liquid-glass",
+		"glassmorphism",
+		"backdrop-filter",
+		"svg-filter",
+		"displacement-map",
+		"refraction",
+		"css",
+		"dom"
+	],
+	"license": "MIT",
+	"author": "Goran Alković",
+	"homepage": "https://github.com/goranalkovic/liquid-glass#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/goranalkovic/liquid-glass.git"
+	},
+	"bugs": {
+		"url": "https://github.com/goranalkovic/liquid-glass/issues"
+	},
+	"sideEffects": false,
+	"type": "module",
+	"workspaces": [
+		"examples"
+	],
+	"main": "./dist/cjs/index.cjs",
+	"module": "./dist/esm/index.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/esm/index.js",
+			"require": "./dist/cjs/index.cjs"
+		},
+		"./react": {
+			"types": "./dist/types/react.d.ts",
+			"import": "./dist/esm/react.js",
+			"require": "./dist/cjs/react.cjs"
+		},
+		"./package.json": "./package.json"
+	},
+	"unpkg": "./dist/liquid-glass.min.js",
+	"jsdelivr": "./dist/liquid-glass.min.js",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"clean": "bun scripts/clean.mjs",
+		"check": "tsc --noEmit",
+		"lint": "oxlint .",
+		"lint:fix": "oxlint --fix .",
+		"build:types": "tsc -p tsconfig.build.json",
+		"build:esm": "esbuild src/index.ts src/react.ts --bundle --format=esm --target=es2020 --outdir=dist/esm --external:react",
+		"build:cjs": "esbuild src/index.ts src/react.ts --bundle --format=cjs --target=es2020 --outdir=dist/cjs --out-extension:.js=.cjs --external:react",
+		"build:iife": "esbuild src/index.ts --bundle --format=iife --global-name=LiquidGlass --target=es2020 --outfile=dist/liquid-glass.js",
+		"build:iife:min": "esbuild src/index.ts --bundle --format=iife --global-name=LiquidGlass --target=es2020 --minify --outfile=dist/liquid-glass.min.js",
+		"build": "bun run check && bun run lint && bun run clean && bun run build:types && bun run build:esm && bun run build:cjs && bun run build:iife && bun run build:iife:min",
+		"dev": "bun run build:iife -- --watch",
+		"example": "bun --hot examples/server.ts",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"prepublishOnly": "bun run build"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.18",
+		"esbuild": "^0.25.0",
+		"oxlint": "^1.82.0",
+		"prettier": "^3.9.6",
+		"react-dom": "^19.2.8",
+		"typescript": "^5.8.0"
+	},
+	"peerDependencies": {
+		"react": "^19.2.8"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		}
+	}
+}

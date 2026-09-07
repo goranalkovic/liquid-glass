@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Liquid Glass — SVG refraction for any element</title>
+		<style>
+			:root {
+				--violet: #7c5cff;
+				--magenta: #ff4d8f;
+				--cyan: #2ee6ff;
+				--ink: #eef0ff;
+			}
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html,
+			body {
+				height: 100%;
+			}
+			body {
+				font-family:
+					ui-sans-serif,
+					system-ui,
+					-apple-system,
+					'Segoe UI',
+					Roboto,
+					Inter,
+					sans-serif;
+				background: #06060f;
+				color: var(--ink);
+				overflow: hidden;
+				-webkit-font-smoothing: antialiased;
+			}
+
+			button {
+				border: none;
+			}
+
+			/* ============ backdrop scene (the stuff that gets refracted) ============ */
+			.scene {
+				position: fixed;
+				inset: 0;
+				overflow: hidden;
+			}
+			.scene::before {
+				/* base gradient */
+				content: '';
+				position: absolute;
+				inset: 0;
+				background:
+					radial-gradient(60vw 60vw at 12% 8%, #1d1f6e 0%, transparent 60%),
+					radial-gradient(70vw 70vw at 88% 78%, #5c1148 0%, transparent 55%),
+					radial-gradient(50vw 50vw at 70% 12%, #0b3b57 0%, transparent 55%),
+					linear-gradient(180deg, #07071a 0%, #06060f 100%);
+			}
+			.blob {
+				position: absolute;
+				border-radius: 50%;
+				filter: blur(80px);
+				opacity: 0.55;
+			}
+			.b1 {
+				width: 42vw;
+				height: 42vw;
+				left: 4vw;
+				top: 8vh;
+				background: var(--violet);
+				animation: drift1 26s ease-in-out infinite alternate;
+			}
+			.b2 {
+				width: 36vw;
+				height: 36vw;
+				right: 8vw;
+				top: 34vh;
+				background: var(--magenta);
+				animation: drift2 21s ease-in-out infinite alternate;
+			}
+			.b3 {
+				width: 30vw;
+				height: 30vw;
+				left: 34vw;
+				bottom: -6vh;
+				background: var(--cyan);
+				opacity: 0.35;
+				animation: drift3 29s ease-in-out infinite alternate;
+			}
+			@keyframes drift1 {
+				to {
+					transform: translate(14vw, 10vh) scale(1.15);
+				}
+			}
+			@keyframes drift2 {
+				to {
+					transform: translate(-12vw, -8vh) scale(0.85);
+				}
+			}
+			@keyframes drift3 {
+				to {
+					transform: translate(10vw, -12vh) scale(1.2);
+				}
+			}
+
+			.gridlines {
+				position: absolute;
+				inset: 0;
+				background-image:
+					repeating-linear-gradient(to right, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 64px),
+					repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 64px);
+			}
+
+			.marquee {
+				position: absolute;
+				left: 0;
+				right: 0;
+				overflow: hidden;
+				font-weight: 800;
+				letter-spacing: 0.06em;
+				line-height: 0.92;
+				font-size: clamp(90px, 13vw, 210px);
+				white-space: nowrap;
+				user-select: none;
+				color: transparent;
+				-webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.22);
+			}
+			.marquee span {
+				display: inline-block;
+				padding-right: 0.5em;
+				will-change: transform;
+			}
+			.m1 {
+				top: 6vh;
+			}
+			.m2 {
+				top: 42vh;
+			}
+			.m3 {
+				top: 74vh;
+			}
+			.m1 span {
+				animation: slide 46s linear infinite;
+			}
+			.m2 span {
+				animation: slide 60s linear infinite reverse;
+			}
+			.m3 span {
+				animation: slide 52s linear infinite;
+			}
+			@keyframes slide {
+				from {
+					transform: translateX(0);
+				}
+				to {
+					transform: translateX(-50%);
+				}
+			}
+
+			.vignette {
+				position: absolute;
+				inset: 0;
+				background: radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+			}
+
+			/* ============ shared glass cosmetics (on top of the SVG filter) ============ */
+			.glass {
+				position: absolute;
+				background: rgba(255, 255, 255, 0.05);
+				box-shadow:
+					inset 0 0 0 1px rgba(255, 255, 255, 0.13),
+					inset 0 1.5px 0 rgba(255, 255, 255, 0.2),
+					0 24px 48px rgba(0, 0, 0, 0.38);
+			}
+
+			/* ---- top dock ---- */
+			.dock {
+				top: 22px;
+				left: 50%;
+				transform: translateX(-50%);
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				padding: 10px 14px;
+				border-radius: 999px;
+			}
+			.dock a {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				color: var(--ink);
+				text-decoration: none;
+				font-size: 13px;
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				padding: 8px 14px;
+				border-radius: 999px;
+				transition: background 0.2s;
+			}
+			.dock a:hover {
+				background: rgba(255, 255, 255, 0.1);
+			}
+			.dock i {
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				background: var(--c, #fff);
+				box-shadow: 0 0 10px var(--c, #fff);
+			}
+
+			/* ---- hero card ---- */
+			.card {
+				left: calc(50% - 160px);
+				top: 52%;
+				transform: translate(-50%, -50%);
+				width: min(540px, 92vw);
+				padding: 34px 36px 30px;
+				border-radius: 30px;
+			}
+			.eyebrow {
+				font-size: 11px;
+				font-weight: 700;
+				letter-spacing: 0.22em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.65);
+			}
+			.card h1 {
+				margin: 14px 0 12px;
+				font-size: clamp(34px, 4.4vw, 52px);
+				line-height: 1.02;
+				letter-spacing: -0.02em;
+				background: linear-gradient(120deg, #fff 30%, #c9b8ff 70%, #8fe9ff);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+			}
+			.card p {
+				font-size: 14.5px;
+				line-height: 1.55;
+				color: rgba(255, 255, 255, 0.78);
+				max-width: 46ch;
+			}
+			.card code {
+				font-family: ui-monospace, Consolas, monospace;
+				font-size: 0.92em;
+				color: #9ef1ff;
+			}
+			.row-actions {
+				display: flex;
+				gap: 12px;
+				margin-top: 24px;
+				flex-wrap: wrap;
+			}
+			.btn {
+				font: inherit;
+				font-size: 13.5px;
+				font-weight: 600;
+				cursor: pointer;
+				padding: 11px 20px;
+				border-radius: 999px;
+				border: 0;
+				text-decoration: none;
+				display: inline-block;
+			}
+			.btn.solid {
+				background: #fff;
+				color: #17123a;
+			}
+			.btn.solid:hover {
+				background: #e9e6ff;
+			}
+			.btn.ghost {
+				color: var(--ink);
+				background: rgba(255, 255, 255, 0.08);
+				box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+			}
+			.btn.ghost:hover {
+				background: rgba(255, 255, 255, 0.14);
+			}
+			.hint {
+				margin-top: 18px;
+				font-size: 11.5px;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.hint b {
+				color: rgba(255, 255, 255, 0.75);
+				font-weight: 600;
+			}
+
+			/* ---- music chip ---- */
+			.chip {
+				left: 26px;
+				bottom: 26px;
+				border-radius: 22px;
+				display: flex;
+				align-items: center;
+				gap: 14px;
+				padding: 14px 20px 14px 14px;
+			}
+			.album {
+				width: 46px;
+				height: 46px;
+				border-radius: 14px;
+				flex: none;
+				background: conic-gradient(from 210deg, var(--violet), var(--magenta), var(--cyan), var(--violet));
+				box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+			}
+			.chip .meta {
+				line-height: 1.3;
+			}
+			.chip .meta b {
+				display: block;
+				font-size: 13px;
+			}
+			.chip .meta span {
+				font-size: 11px;
+				color: rgba(255, 255, 255, 0.6);
+			}
+			.eq {
+				display: flex;
+				align-items: flex-end;
+				gap: 3px;
+				height: 20px;
+				margin-left: 6px;
+			}
+			.eq b {
+				width: 3px;
+				border-radius: 2px;
+				background: rgba(255, 255, 255, 0.85);
+				animation: bounce 1s ease-in-out infinite;
+				transform-origin: bottom;
+			}
+			.eq b:nth-child(1) {
+				height: 40%;
+				animation-delay: -0.1s;
+			}
+			.eq b:nth-child(2) {
+				height: 90%;
+				animation-delay: -0.5s;
+			}
+			.eq b:nth-child(3) {
+				height: 60%;
+				animation-delay: -0.3s;
+			}
+			.eq b:nth-child(4) {
+				height: 100%;
+				animation-delay: -0.8s;
+			}
+			.eq b:nth-child(5) {
+				height: 50%;
+				animation-delay: -0.2s;
+			}
+			@keyframes bounce {
+				50% {
+					transform: scaleY(0.35);
+				}
+			}
+
+			/* ---- fab ---- */
+			.fab {
+				right: 26px;
+				bottom: 26px;
+				width: 62px;
+				height: 62px;
+				border-radius: 50%;
+				border: 0;
+				cursor: pointer;
+				color: var(--ink);
+				font-size: 26px;
+				line-height: 1;
+				display: grid;
+				place-items: center;
+				transition: transform 0.2s;
+			}
+			.fab:hover {
+				transform: scale(1.06);
+			}
+
+			/* ---- draggable lens ---- */
+			.lens {
+				left: 7vw;
+				top: 22vh;
+				width: 172px;
+				height: 172px;
+				border-radius: 50%;
+				cursor: grab;
+				touch-action: none;
+				display: grid;
+				place-items: center;
+			}
+			.lens:active {
+				cursor: grabbing;
+			}
+			.lens span {
+				font-size: 10.5px;
+				font-weight: 700;
+				letter-spacing: 0.24em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.6);
+				pointer-events: none;
+			}
+
+			/* ---- hover-grow pill (animated width — the 9-slice use case) ---- */
+			.grow {
+				right: 26px;
+				top: 42%;
+				width: 168px;
+				height: 54px;
+				border-radius: 27px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 10px;
+				color: var(--ink);
+				font-size: 13px;
+				font-weight: 600;
+				cursor: pointer;
+				user-select: none;
+				white-space: nowrap;
+				transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+			.grow:hover {
+				width: 344px;
+			}
+			.grow .chev {
+				transition: transform 0.4s;
+				font-size: 15px;
+				opacity: 0.7;
+			}
+			.grow:hover .chev {
+				transform: translateX(6px);
+			}
+			.grow .lbl-extra {
+				opacity: 0;
+				transition: opacity 0.3s 0.15s;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.65);
+			}
+			.grow:hover .lbl-extra {
+				opacity: 1;
+			}
+
+			/* ---- square → rectangle morph (9-slice use case #2) ---- */
+			.morph {
+				left: 26px;
+				top: 42%;
+				width: 96px;
+				height: 96px;
+				border-radius: 28px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 12px;
+				color: var(--ink);
+				font-size: 13px;
+				font-weight: 600;
+				cursor: pointer;
+				user-select: none;
+				white-space: nowrap;
+				transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+			.morph:hover {
+				width: 300px;
+			}
+			.morph .glyph {
+				display: inline-block;
+				flex: none;
+				width: 13px;
+				height: 13px;
+				border: 2px solid rgba(255, 255, 255, 0.85);
+				border-radius: 3px;
+				transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+			.morph:hover .glyph {
+				width: 28px;
+			}
+			.morph .lbl {
+				opacity: 0;
+				transition: opacity 0.3s 0.15s;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.65);
+			}
+			.morph:hover .lbl {
+				opacity: 1;
+			}
+
+			/* ============ control panel ============ */
+			.panel {
+				position: fixed;
+				top: 18px;
+				right: 18px;
+				z-index: 10;
+				width: 302px;
+				max-height: calc(100vh - 36px);
+				overflow: auto;
+				background: rgba(12, 13, 24, 0.92);
+				border: 1px solid rgba(255, 255, 255, 0.09);
+				border-radius: 18px;
+				padding: 18px 18px 16px;
+				backdrop-filter: blur(14px);
+				transition:
+					transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+					opacity 0.3s;
+				scrollbar-width: thin;
+			}
+			.panel.collapsed {
+				transform: translateX(calc(100% + 26px));
+				opacity: 0;
+				pointer-events: none;
+			}
+			.panel h2 {
+				font-size: 12px;
+				letter-spacing: 0.18em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.55);
+				margin-bottom: 4px;
+			}
+			.panel .sub {
+				font-size: 11px;
+				color: rgba(255, 255, 255, 0.42);
+				margin-bottom: 14px;
+			}
+			.panel label.row {
+				display: block;
+				margin-bottom: 11px;
+			}
+			.panel label.row > span {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				font-size: 11.5px;
+				font-weight: 600;
+				color: rgba(255, 255, 255, 0.75);
+				margin-bottom: 5px;
+			}
+			.panel output {
+				font-size: 11px;
+				color: var(--cyan);
+				font-variant-numeric: tabular-nums;
+			}
+			.panel input[type='range'] {
+				width: 100%;
+				accent-color: var(--violet);
+				height: 18px;
+			}
+			.seg {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 6px;
+				margin: 4px 0 14px;
+			}
+			.seg button {
+				font: inherit;
+				font-size: 11px;
+				font-weight: 600;
+				cursor: pointer;
+				padding: 8px 6px;
+				border-radius: 9px;
+				color: rgba(255, 255, 255, 0.7);
+				background: rgba(255, 255, 255, 0.06);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+			}
+			.seg button.on {
+				background: rgba(124, 92, 255, 0.28);
+				border-color: rgba(124, 92, 255, 0.6);
+				color: #fff;
+			}
+			.auto-btn {
+				font: inherit;
+				font-size: 10px;
+				font-weight: 700;
+				letter-spacing: 0.05em;
+				cursor: pointer;
+				padding: 2px 9px;
+				border-radius: 999px;
+				margin: 0 6px;
+				color: rgba(255, 255, 255, 0.55);
+				background: rgba(255, 255, 255, 0.07);
+				border: 1px solid rgba(255, 255, 255, 0.14);
+				vertical-align: 1px;
+			}
+			.auto-btn.on {
+				color: #fff;
+				background: rgba(124, 92, 255, 0.3);
+				border-color: rgba(124, 92, 255, 0.6);
+			}
+			.divider {
+				border: 0;
+				border-top: 1px solid rgba(255, 255, 255, 0.08);
+				margin: 14px 0;
+			}
+			#mapPreview {
+				width: 100%;
+				height: auto;
+				border-radius: 10px;
+				display: block;
+				margin-top: 8px;
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				background: #08080f;
+			}
+			/* Keep the aspect-ratio placeholder in sync with the baked map so the
+     preview is never stretched (the map is element-shaped by design:
+     feDisplacementMap is sampled 1:1 in element space). */
+			.maplabel {
+				font-size: 10.5px;
+				color: rgba(255, 255, 255, 0.45);
+				margin-top: 6px;
+				line-height: 1.45;
+			}
+			#supportBadge {
+				margin-top: 12px;
+				font-size: 10.5px;
+				font-weight: 600;
+				letter-spacing: 0.03em;
+				padding: 7px 10px;
+				border-radius: 8px;
+			}
+			#supportBadge.ok {
+				color: #7dffb0;
+				background: rgba(46, 230, 140, 0.1);
+				border: 1px solid rgba(46, 230, 140, 0.25);
+			}
+			#supportBadge.no {
+				color: #ffb36b;
+				background: rgba(255, 160, 70, 0.1);
+				border: 1px solid rgba(255, 160, 70, 0.25);
+			}
+			#panelToggle {
+				position: fixed;
+				top: 18px;
+				right: 18px;
+				z-index: 11;
+				width: 40px;
+				height: 40px;
+				border-radius: 12px;
+				cursor: pointer;
+				background: rgba(12, 13, 24, 0.92);
+				color: #fff;
+				border: 1px solid rgba(255, 255, 255, 0.12);
+				font-size: 16px;
+				display: none;
+				place-items: center;
+			}
+			#panelToggle.show {
+				display: grid;
+			}
+
+			.credit {
+				position: fixed;
+				bottom: 14px;
+				left: 50%;
+				transform: translateX(-50%);
+				font-size: 11px;
+				color: rgba(255, 255, 255, 0.45);
+				z-index: 5;
+				white-space: nowrap;
+			}
+			.credit a {
+				color: rgba(255, 255, 255, 0.7);
+			}
+
+			@media (max-width: 900px) {
+				.card {
+					left: 50%;
+					top: 46%;
+				}
+				.credit {
+					display: none;
+				}
+				.lens {
+					left: 8vw;
+					top: 60vh;
+				}
+				.morph {
+					left: 8vw;
+					top: 30vh;
+				}
+				.grow {
+					right: 8vw;
+					top: 30vh;
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.blob,
+				.marquee span,
+				.eq b {
+					animation: none !important;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<!-- ================= backdrop scene ================= -->
+		<div class="scene" aria-hidden="true">
+			<div class="blob b1"></div>
+			<div class="blob b2"></div>
+			<div class="blob b3"></div>
+			<div class="gridlines"></div>
+			<div class="marquee m1">
+				<span
+					>LIQUID GLASS&nbsp;·&nbsp;REFRACTION&nbsp;·&nbsp;LIQUID GLASS&nbsp;·&nbsp;REFRACTION&nbsp;·&nbsp;LIQUID
+					GLASS&nbsp;·&nbsp;REFRACTION&nbsp;·&nbsp;LIQUID GLASS&nbsp;·&nbsp;REFRACTION&nbsp;·&nbsp;</span
+				>
+			</div>
+			<div class="marquee m2">
+				<span
+					>DISPLACEMENT&nbsp;·&nbsp;SPECULAR&nbsp;·&nbsp;DISPLACEMENT&nbsp;·&nbsp;SPECULAR&nbsp;·&nbsp;DISPLACEMENT&nbsp;·&nbsp;SPECULAR&nbsp;·&nbsp;DISPLACEMENT&nbsp;·&nbsp;SPECULAR&nbsp;·&nbsp;</span
+				>
+			</div>
+			<div class="marquee m3">
+				<span
+					>SNELL&nbsp;DESCARTES&nbsp;·&nbsp;n₁sinθ₁&nbsp;=&nbsp;n₂sinθ₂&nbsp;·&nbsp;SNELL&nbsp;DESCARTES&nbsp;·&nbsp;n₁sinθ₁&nbsp;=&nbsp;n₂sinθ₂&nbsp;·&nbsp;</span
+				>
+			</div>
+			<div class="vignette"></div>
+		</div>
+
+		<!-- ================= glass elements ================= -->
+		<nav class="glass dock" data-liquid-glass>
+			<a href="#"><i style="--c: #2ee6ff"></i>Home</a>
+			<a href="#"><i style="--c: #7c5cff"></i>Layers</a>
+			<a href="#"><i style="--c: #ff4d8f"></i>Sparkle</a>
+			<a href="#"><i style="--c: #ffd166"></i>Studio</a>
+			<a href="#"><i style="--c: #7dffb0"></i>Profile</a>
+		</nav>
+
+		<section class="glass card" id="card" data-liquid-glass>
+			<div class="eyebrow">SVG filter · displacement map</div>
+			<h1>Liquid Glass,<br />on any element.</h1>
+			<p>
+				Refraction is baked into a displacement map from a bezel profile and Snell's law, edged with a razor-thin rim of
+				hyper-saturated color — all applied through a single <code>backdrop-filter: url(#…)</code>.
+			</p>
+			<div class="row-actions">
+				<button class="btn solid">Get started</button>
+				<a class="btn ghost" href="https://kube.io/blog/liquid-glass-css-svg/" target="_blank" rel="noopener"
+					>Read the article ↗</a
+				>
+			</div>
+			<div class="hint">
+				<b>Drag the round lens</b> through the type. Hover the pill (right) and the square (left): 9-slice resizing is
+				pure re-positioning — no re-baking, every frame.
+			</div>
+		</section>
+
+		<div class="glass chip" data-liquid-glass>
+			<div class="album"></div>
+			<div class="meta"><b>Chromatic Aberration</b><span>Refract &amp; Blur · Single</span></div>
+			<div class="eq"><b></b><b></b><b></b><b></b><b></b></div>
+		</div>
+
+		<button class="glass fab" data-liquid-glass aria-label="Add">+</button>
+
+		<div class="glass lens" id="lens" data-liquid-glass><span>drag me</span></div>
+
+		<button class="glass grow" id="grow" data-liquid-glass>
+			Hover to grow <span class="lbl-extra">— watch the refraction stretch</span> <span class="chev">→</span>
+		</button>
+
+		<button class="glass morph" id="morph" data-liquid-glass aria-label="Square that becomes a rectangle on hover">
+			<span class="glyph"></span> <span class="lbl">square → rectangle, live</span>
+		</button>
+
+		<!-- ================= controls ================= -->
+		<button id="panelToggle" aria-label="Toggle controls">✕</button>
+		<aside class="panel" id="panel">
+			<h2>Playground</h2>
+			<div class="sub">Applies live to every glass element on the page.</div>
+
+			<div class="seg" role="group" aria-label="Surface profile">
+				<button data-surface="convex-squircle" class="on">Convex squircle</button>
+				<button data-surface="convex-circle">Convex circle</button>
+				<button data-surface="concave">Concave</button>
+				<button data-surface="lip">Lip</button>
+			</div>
+
+			<label class="row"
+				><span>Bezel width <output>64</output></span>
+				<input type="range" data-opt="bezel" min="8" max="96" step="1" value="64"
+			/></label>
+			<label class="row"
+				><span>Glass thickness <output>52</output></span>
+				<input type="range" data-opt="thickness" min="4" max="120" step="1" value="52"
+			/></label>
+			<label class="row"
+				><span>Refractive index <output>1.5</output></span>
+				<input type="range" data-opt="ior" min="1" max="2.5" step="0.01" value="1.5"
+			/></label>
+			<label class="row"
+				><span>Refraction level <output>1</output></span>
+				<input type="range" data-opt="scale" min="0" max="2" step="0.01" value="1"
+			/></label>
+			<label class="row"
+				><span>Backdrop blur <output>1</output></span>
+				<input type="range" data-opt="blur" min="0" max="8" step="0.1" value="1"
+			/></label>
+
+			<div class="row">
+				<span
+					>Bake quality
+					<button
+						type="button"
+						id="rscaleAuto"
+						class="auto-btn on"
+						title="Follow the display's integer pixel density \u00d7 cap by tile size (min 1\u00d7)"
+					>
+						auto
+					</button>
+					<output id="rscaleOut">auto \u2192 1\u00d7</output></span
+				>
+				<input type="range" id="rscale" min="0.5" max="4" step="0.25" value="1" aria-label="Bake quality multiplier" />
+			</div>
+
+			<hr class="divider" />
+
+			<label class="row"
+				><span>Rim saturation <output>6</output></span>
+				<input type="range" data-opt="specular.saturation" min="0" max="20" step="0.5" value="6"
+			/></label>
+			<label class="row"
+				><span>Rim opacity <output>0.4</output></span>
+				<input type="range" data-opt="specular.opacity" min="0" max="1" step="0.01" value="0.4"
+			/></label>
+			<label class="row"
+				><span>Light angle (°) <output>65</output></span>
+				<input type="range" data-opt="specular.angle" min="-180" max="180" step="1" value="65"
+			/></label>
+			<label class="row"
+				><span>Rim width <output>1.6</output></span>
+				<input type="range" data-opt="specular.width" min="0.5" max="6" step="0.1" value="1.6"
+			/></label>
+
+			<hr class="divider" />
+			<img id="mapPreview" alt="Generated displacement + specular map (debug view)" width="540" height="408" />
+			<div class="maplabel">
+				Card map — R/G channels encode X/Y displacement (128 = neutral), blue is the razor-thin rim line.
+			</div>
+			<div class="maplabel" id="scaleInfo"></div>
+			<div id="supportBadge"></div>
+		</aside>
+
+		<footer class="credit">
+			Technique:
+			<a href="https://kube.io/blog/liquid-glass-css-svg/" target="_blank" rel="noopener"
+				>kube.io — Liquid Glass in the Browser</a
+			>
+			· effect requires a Chromium browser
+		</footer>
+
+		<script src="dist/liquid-glass.js"></script>
+		<script>
+			(function () {
+				'use strict';
+
+				/* ---------- create one instance per glass element ---------- */
+				var els = {
+					dock: document.querySelector('.dock'),
+					card: document.getElementById('card'),
+					chip: document.querySelector('.chip'),
+					fab: document.querySelector('.fab'),
+					lens: document.getElementById('lens'),
+					grow: document.getElementById('grow'),
+					morph: document.getElementById('morph'),
+				};
+				var instances = [];
+				Object.keys(els).forEach(function (k) {
+					var el = els[k];
+					if (!el) return;
+					var opts = {bezel: 64, thickness: 52};
+					if (k === 'card') opts.debug = true; // feeds the map preview
+					if (k === 'lens') {
+						opts.bezel = 58;
+						opts.thickness = 70;
+					} // chunky lens
+					instances.push(LiquidGlass.create(el, opts));
+				});
+
+				/* ---------- control panel wiring ---------- */
+				function setAll(patch) {
+					instances.forEach(function (i) {
+						i.setOptions(patch);
+					});
+				}
+
+				document.querySelectorAll('#panel input[type=range][data-opt]').forEach(function (input) {
+					var path = input.dataset.opt.split('.');
+					var out = input.closest('label').querySelector('output');
+					input.addEventListener('input', function () {
+						var v = parseFloat(input.value);
+						out.textContent = v;
+						var patch = {};
+						if (path.length === 2) {
+							patch[path[0]] = {};
+							patch[path[0]][path[1]] = v;
+						} else {
+							patch[path[0]] = v;
+						}
+						setAll(patch);
+					});
+				});
+
+				document.querySelectorAll('.seg button[data-surface]').forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						document.querySelectorAll('.seg button[data-surface]').forEach(function (b) {
+							b.classList.toggle('on', b === btn);
+						});
+						setAll({surface: btn.dataset.surface});
+					});
+				});
+
+				/* ---------- bake quality (render scale): auto or 0.25–4× slider ---------- */
+				var rscale = document.getElementById('rscale');
+				var rscaleAuto = document.getElementById('rscaleAuto');
+				var rsOut = document.getElementById('rscaleOut');
+				var rsAuto = true;
+				function setQualityUI(value, isAuto) {
+					rsAuto = isAuto;
+					rscaleAuto.classList.toggle('on', isAuto);
+					rscale.value = value;
+					rsOut.textContent = (isAuto ? 'auto \u2192 ' : '') + value + '\u00d7';
+				}
+				rscale.addEventListener('input', function () {
+					var v = parseFloat(rscale.value);
+					setQualityUI(v, false); // dragging switches to explicit quality
+					setAll({renderScale: v});
+				});
+				rscaleAuto.addEventListener('click', function () {
+					rsAuto = true; // re-enter auto; refresh event syncs UI
+					setAll({renderScale: 'auto'});
+				});
+
+				/* ---------- map preview (debug view from the card) ---------- */
+				var mapImg = document.getElementById('mapPreview');
+				var scaleInfo = document.getElementById('scaleInfo');
+				els.card.addEventListener('lglass:refresh', function (e) {
+					if (e.detail.debugUrl) mapImg.src = e.detail.debugUrl;
+					// Keep the intrinsic size attributes matching the baked map so the
+					// displayed aspect ratio tracks the element (no horizontal stretch).
+					if (e.detail.width && e.detail.height) {
+						mapImg.width = e.detail.width;
+						mapImg.height = e.detail.height;
+					}
+					if (e.detail.renderScale != null) {
+						scaleInfo.textContent =
+							'baked at ' +
+							e.detail.renderScale +
+							'\u00d7 \u00b7 card ' +
+							els.card.offsetWidth +
+							'\u00d7' +
+							els.card.offsetHeight +
+							' \u00b7 radius ' +
+							getComputedStyle(els.card).borderRadius;
+						if (rsAuto) setQualityUI(e.detail.renderScale, true); // thumb tracks auto
+					}
+				});
+
+				/* ---------- support badge ---------- */
+				var badge = document.getElementById('supportBadge');
+				if (LiquidGlass.isSupported()) {
+					badge.textContent = 'SVG backdrop-filter: supported ✓';
+					badge.className = 'ok';
+				} else {
+					badge.textContent = 'SVG backdrop-filter unsupported here — blur fallback active';
+					badge.className = 'no';
+				}
+
+				/* ---------- panel collapse ---------- */
+				var panel = document.getElementById('panel');
+				var toggle = document.getElementById('panelToggle');
+				toggle.classList.add('show');
+				toggle.addEventListener('click', function () {
+					var collapsed = panel.classList.toggle('collapsed');
+					toggle.textContent = collapsed ? '⚙' : '✕';
+				});
+
+				/* ---------- draggable lens (no map regen needed — only size matters) ---------- */
+				var lens = els.lens;
+				var drag = null;
+				lens.addEventListener('pointerdown', function (e) {
+					drag = {dx: e.clientX - lens.offsetLeft, dy: e.clientY - lens.offsetTop};
+					lens.setPointerCapture(e.pointerId);
+				});
+				lens.addEventListener('pointermove', function (e) {
+					if (!drag) return;
+					lens.style.left = e.clientX - drag.dx + 'px';
+					lens.style.top = e.clientY - drag.dy + 'px';
+				});
+				function endDrag() {
+					drag = null;
+				}
+				lens.addEventListener('pointerup', endDrag);
+				lens.addEventListener('pointercancel', endDrag);
+			})();
+		</script>
+	</body>
+</html>
