@@ -1,5 +1,5 @@
 /**
- * React hook for LiquidGlass — `import { useLiquidGlass } from 'liquid-glass/react'`.
+ * React hook for LiquidGlass - `import { useLiquidGlass } from '@goran.alkovic/liquid-glass/react'`.
  *
  * Ships as a separate entry point so non-React consumers never pull react
  * in; `react` is an optional peer dependency (18+).
@@ -16,7 +16,7 @@ import type {LiquidGlassEvents, LiquidGlassOptions} from './types';
  */
 export interface UseLiquidGlassResult<El extends HTMLElement = HTMLElement> {
 	/**
-	 * Attach to your element — the effect is created when the node mounts and
+	 * Attach to your element - the effect is created when the node mounts and
 	 * destroyed when it unmounts (React 18 StrictMode-safe):
 	 *
 	 * ```tsx
@@ -39,7 +39,7 @@ export interface UseLiquidGlassResult<El extends HTMLElement = HTMLElement> {
 	): () => void;
 	/** Re-bake for the element's current geometry (usually automatic). */
 	refresh(): void;
-	/** Cheap tile re-positioning for a new size (usually automatic — the
+	/** Cheap tile re-positioning for a new size (usually automatic - the
 	 * controller observes size changes itself). */
 	relayout(width?: number, height?: number): void;
 }
@@ -48,7 +48,7 @@ export interface UseLiquidGlassResult<El extends HTMLElement = HTMLElement> {
  * Attach a liquid-glass effect to an element with one hook.
  *
  * ```tsx
- * import { useLiquidGlass } from 'liquid-glass/react';
+ * import { useLiquidGlass } from '@goran.alkovic/liquid-glass/react';
  *
  * function Card({ strong }: { strong: boolean }) {
  *   const options = useMemo(
@@ -62,13 +62,13 @@ export interface UseLiquidGlassResult<El extends HTMLElement = HTMLElement> {
  *
  * Lifecycle: the controller is created when the referenced node mounts and
  * destroyed when it unmounts or when React swaps the node for a different
- * one — no cleanup needed, and React 18 StrictMode's double-invocation is
+ * one - no cleanup needed, and React 18 StrictMode's double-invocation is
  * handled (destroyed instances never touch the DOM again).
  *
  * Options flow through `setOptions`: cheap options (`scale`, `saturate`,
  * `blur`, `specular.opacity/saturation`) rebuild only the filter, geometry
  * options re-bake via the library's throttling. **The options object
- * identity is what matters** — memoize it (or hoist it) so the hook only
+ * identity is what matters** - memoize it (or hoist it) so the hook only
  * calls `setOptions` when something actually changed.
  */
 export function useLiquidGlass<El extends HTMLElement = HTMLElement>(
@@ -78,7 +78,7 @@ export function useLiquidGlass<El extends HTMLElement = HTMLElement>(
 	const [glass, setGlass] = useState<LiquidGlass | null>(null);
 	// Options the mounted instance was last given (constructor or setOptions).
 	const appliedOptions = useRef<LiquidGlassOptions | undefined>(options);
-	// Subscriptions made before the instance existed — attached on creation.
+	// Subscriptions made before the instance existed - attached on creation.
 	const pendingSubs = useRef<PendingSub[]>([]);
 
 	// Create on node mount, destroy on unmount / node swap. The controller
@@ -88,7 +88,7 @@ export function useLiquidGlass<El extends HTMLElement = HTMLElement>(
 		if (!node) return;
 		const g = new LiquidGlass(node, appliedOptions.current);
 		// Attach subscriptions queued before the instance existed. Bound via
-		// closure — a detached method reference would lose `this`.
+		// closure - a detached method reference would lose `this`.
 		const attach = (type: string, handler: (e: CustomEvent<unknown>) => void) =>
 			g.on(type as keyof LiquidGlassEvents & string, handler as never);
 		for (const p of pendingSubs.current) attach(p.type, p.handler);
@@ -117,7 +117,7 @@ export function useLiquidGlass<El extends HTMLElement = HTMLElement>(
 			handler: (event: CustomEvent<LiquidGlassEvents[K]>) => void,
 		): (() => void) => {
 			if (glass) return glass.on(type, handler);
-			// Instance not mounted yet — queue; attached on creation. Calling
+			// Instance not mounted yet - queue; attached on creation. Calling
 			// on() again once mounted re-attaches directly (and drops the
 			// queue entry), so handlers never fire twice.
 			pendingSubs.current = pendingSubs.current.filter((p) => p.type !== type || p.handler !== handler);

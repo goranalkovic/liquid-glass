@@ -9,7 +9,7 @@ import type {CornerRadii, LiquidGlassResolvedOptions} from './types';
 import type {LUT} from './surfaces';
 
 /** erf via a 512-entry lookup table over [0, 4] with linear interpolation
- * (A&S 7.1.26 seed, ~1e-4 worst-case error after lerp) — plenty for
+ * (A&S 7.1.26 seed, ~1e-4 worst-case error after lerp) - plenty for
  * 8-bit alpha and far cheaper than a per-pixel special function. */
 const ERF_N = 512;
 const ERF_MAX = 4;
@@ -52,9 +52,9 @@ export type Sampler = (x: number, y: number, out: SampleOut) => void;
  * 9-slicing exact (corner fields depend only on the corner radius; edge
  * fields are uniform along the edge axis).
  *
- * @param res Bake resolution multiplier — the rim's analytic
+ * @param res Bake resolution multiplier - the rim's analytic
  *        anti-aliasing integrates over a footprint derived from it.
- * @returns `sample(x, y, out)` — writes `out[0] = R`, `out[1] = G`,
+ * @returns `sample(x, y, out)` - writes `out[0] = R`, `out[1] = G`,
  *   `out[2] = rimAlpha` (0–1 scale).
  */
 export function makeSampler(
@@ -118,7 +118,7 @@ export function makeSampler(
 			uy = -sy * (gy / gl);
 		} else {
 			// Distance: smooth-min of the two axis distances. A hard `min()`
-			// has a tent apex exactly on the 45° medial diagonal — the normal
+			// has a tent apex exactly on the 45° medial diagonal - the normal
 			// blend below rotates the direction, but the magnitude still
 			// kinked, which read as a faint diagonal line on strong-slope
 			// profiles (convex circle). The polynomial smooth-min rounds the
@@ -128,18 +128,18 @@ export function makeSampler(
 			const h = clamp(0.5 + (0.5 * (dy - dx)) / k, 0, 1);
 			d = dy + (dx - dy) * h - k * h * (1 - h);
 			// Smooth hand-off between the two candidate edges around the 45°
-			// diagonal — the "medial axis" where the nearest border flips
+			// diagonal - the "medial axis" where the nearest border flips
 			// from a vertical edge (dx) to a horizontal one (dy). Picking one
 			// edge hard makes the displacement direction jump 90° across that
 			// diagonal; once the bezel extends past the corner tangent box
 			// (bezel > radius) the active field reaches it and the jump
 			// renders as a sharp crease running diagonally out of the corner.
-			// Blending the two inward normals — weighted by a sigmoid on the
-			// distance gap — rotates the direction smoothly through the
+			// Blending the two inward normals - weighted by a sigmoid on the
+			// distance gap - rotates the direction smoothly through the
 			// diagonal, like a real swept bezel would. The blend width shrinks
 			// with depth (→ 0 at the bezel end): on an edge strip, whose own
 			// edge is exactly `bezel` away, the weight stays a constant
-			// σ(−12) — utterly negligible, so strips and 9-slice exactness
+			// σ(−12) - utterly negligible, so strips and 9-slice exactness
 			// are unaffected.
 			const w0 = blendW * (1 - (d >= bezel ? 1 : d / bezel)) + 1e-3;
 			const wX = 1 / (1 + Math.exp(-(dy - dx) / w0)); // left/right edge
@@ -162,7 +162,7 @@ export function makeSampler(
 			const fr = ti - i0;
 
 			// Displacement vector, normalised (inward for convex surfaces).
-			// Float on purpose — bakeTile quantizes to 8-bit WITH dither.
+			// Float on purpose - bakeTile quantizes to 8-bit WITH dither.
 			const mag = (disp[i0] + (disp[i1] - disp[i0]) * fr) / maxAbs;
 			R = clamp(128 + 127 * mag * ux, 0, 255);
 			G = clamp(128 + 127 * mag * uy, 0, 255);
@@ -170,7 +170,7 @@ export function makeSampler(
 			// Rim: thin Gaussian line at the border, one-sided toward the
 			// light. ANALYTIC ANTI-ALIASING: the Gaussian is integrated over
 			// the pixel's footprint along the border normal (half-sample wide,
-			// stretched by |ux|+|uy| on diagonals) instead of point-sampled —
+			// stretched by |ux|+|uy| on diagonals) instead of point-sampled -
 			// exact area coverage keeps the arc smooth at any bake resolution.
 			// Normalized so a fully-covered peak keeps the designed intensity.
 			const facing = ux * Lx + uy * Ly;

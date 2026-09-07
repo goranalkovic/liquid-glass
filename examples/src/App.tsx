@@ -1,7 +1,6 @@
 import {useCallback, useMemo, useRef, useState} from 'react';
-import type {CSSProperties} from 'react';
-import type {LiquidGlassOptions, LiquidGlassRefreshDetail, SurfaceName} from 'liquid-glass';
-import {isSupported} from 'liquid-glass';
+import type {LiquidGlassOptions, LiquidGlassRefreshDetail, SurfaceName} from '@goran.alkovic/liquid-glass';
+import {isSupported} from '@goran.alkovic/liquid-glass';
 import {Glass} from './Glass';
 
 const SURFACES: Array<{name: SurfaceName; label: string}> = [
@@ -39,7 +38,7 @@ function Slider({label, value, min, max, step, display, onChange}: SliderProps) 
 	);
 }
 
-/** Draggable glass shape — position changes never re-bake (only size matters). */
+/** Draggable glass shape - position changes never re-bake (only size matters). */
 function ShapeLens({options, className, label}: {options: LiquidGlassOptions; className: string; label: string}) {
 	const drag = useRef<{dx: number; dy: number} | null>(null);
 	return (
@@ -65,13 +64,13 @@ function ShapeLens({options, className, label}: {options: LiquidGlassOptions; cl
 }
 
 export default function App() {
-	// playground config — applied live to every glass element
+	// playground config - applied live to every glass element
 	const [surface, setSurface] = useState<SurfaceName>('convex-squircle');
 	const [bezel, setBezel] = useState(64);
 	const [thickness, setThickness] = useState(52);
 	const [ior, setIor] = useState(1.5);
 	const [scale, setScale] = useState(1);
-	const [blur, setBlur] = useState(1);
+	const [blur, setBlur] = useState(0.2);
 	const [sat, setSat] = useState(6);
 	const [rimOpacity, setRimOpacity] = useState(0.4);
 	const [angle, setAngle] = useState(65);
@@ -135,65 +134,26 @@ export default function App() {
 			</div>
 
 			{/* ================= glass elements ================= */}
-			<Glass as='nav' className='glass dock' options={options}>
-				<a href='#'>
-					<i style={{'--c': '#2ee6ff'} as CSSProperties} />
-					Home
-				</a>
-				<a href='#'>
-					<i style={{'--c': '#7c5cff'} as CSSProperties} />
-					Layers
-				</a>
-				<a href='#'>
-					<i style={{'--c': '#ff4d8f'} as CSSProperties} />
-					Sparkle
-				</a>
-				<a href='#'>
-					<i style={{'--c': '#ffd166'} as CSSProperties} />
-					Studio
-				</a>
-				<a href='#'>
-					<i style={{'--c': '#7dffb0'} as CSSProperties} />
-					Profile
-				</a>
-			</Glass>
-
 			<Glass as='section' className='glass card' options={cardOptions} onRefresh={onCardRefresh}>
-				<div className='eyebrow'>SVG filter · displacement map</div>
+				<div className='eyebrow'>Lorem ipsum · dolor sit amet</div>
 				<h1>
-					Liquid Glass,
+					Lorem ipsum,
 					<br />
-					on any element.
+					dolor sit amet.
 				</h1>
 				<p>
-					Refraction is baked into a displacement map from a bezel profile and Snell's law, edged with a razor-thin rim
-					of hyper-saturated color — all applied through a single <code>backdrop-filter: url(#…)</code>.
+					Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+					minim veniam, quis nostrud <code>exercitation ullamco</code> laboris.
 				</p>
 				<div className='row-actions'>
-					<button className='btn solid'>Get started</button>
-					<a className='btn ghost' href='https://kube.io/blog/liquid-glass-css-svg/' target='_blank' rel='noopener'>
-						Read the article ↗
+					<button className='btn solid'>Lorem ipsum</button>
+					<a className='btn ghost' href='#'>
+						Dolor sit amet
 					</a>
 				</div>
 				<div className='hint'>
-					<b>Drag the round lens</b> through the type. Hover the pill (right) and the square (left): 9-slice resizing is
-					pure re-positioning — no re-baking, every frame. The sharp and rounded shapes along the bottom are draggable,
-					too.
-				</div>
-			</Glass>
-
-			<Glass className='glass chip' options={options}>
-				<div className='album' />
-				<div className='meta'>
-					<b>Chromatic Aberration</b>
-					<span>Refract &amp; Blur · Single</span>
-				</div>
-				<div className='eq'>
-					<b />
-					<b />
-					<b />
-					<b />
-					<b />
+					<b>Lorem ipsum dolor</b> sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+					dolore magna aliqua.
 				</div>
 			</Glass>
 
@@ -203,15 +163,14 @@ export default function App() {
 
 			<ShapeLens options={options} className='lens-circle' label='drag me' />
 
-			{/* shape lab — sharp corners (r = 0) work like any other radius */}
+			{/* shape lab - sharp corners (r = 0) work like any other radius */}
 			<ShapeLens options={options} className='lens-sq-sharp' label='sharp' />
 			<ShapeLens options={options} className='lens-sq-rounded' label='rounded' />
 			<ShapeLens options={options} className='lens-rect-sharp' label='rect · sharp' />
 			<ShapeLens options={options} className='lens-rect-rounded' label='rect · rounded' />
 
-			<Glass as='button' className='glass grow' options={options}>
-				Hover to grow <span className='lbl-extra'>— watch the refraction stretch</span>
-				<span className='chev'>→</span>
+			<Glass as='button' className='glass grow' options={options} aria-label='Grow on hover'>
+				Grow <span className='chev'>→</span>
 			</Glass>
 
 			<Glass
@@ -220,7 +179,7 @@ export default function App() {
 				options={options}
 				aria-label='Square that becomes a rectangle on hover'
 			>
-				<span className='glyph' /> <span className='lbl'>square → rectangle, live</span>
+				<span className='glyph' />
 			</Glass>
 
 			{/* ================= controls ================= */}
@@ -290,7 +249,7 @@ export default function App() {
 					/>
 				)}
 				<div className='maplabel'>
-					Card map — R/G channels encode X/Y displacement (128 = neutral), blue is the razor-thin rim line.
+					Card map - R/G channels encode X/Y displacement (128 = neutral), blue is the razor-thin rim line.
 				</div>
 				<div className='maplabel'>
 					{preview ? `baked at ${resolvedRs}× · card ${preview.w}×${preview.h} · radius 30px` : ''}
@@ -298,17 +257,9 @@ export default function App() {
 				<div className={'support-badge ' + (supported ? 'ok' : 'no')}>
 					{supported
 						? 'SVG backdrop-filter: supported ✓'
-						: 'SVG backdrop-filter unsupported here — blur fallback active'}
+						: 'SVG backdrop-filter unsupported here - blur fallback active'}
 				</div>
 			</aside>
-
-			<footer className='credit'>
-				Technique:{' '}
-				<a href='https://kube.io/blog/liquid-glass-css-svg/' target='_blank' rel='noopener'>
-					kube.io — Liquid Glass in the Browser
-				</a>{' '}
-				· example served by Bun
-			</footer>
 		</>
 	);
 }

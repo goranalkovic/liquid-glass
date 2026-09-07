@@ -47,14 +47,14 @@ export interface BakedTile {
  * plain rounding turns the smooth displacement field into coherent
  * terraces that render as stair-stepped edges in the refracted content.
  * The dither trades those staircases for imperceptible per-pixel grain
- * — no blur involved, and it is resolution-independent (channel depth,
+ * - no blur involved, and it is resolution-independent (channel depth,
  * not spatial detail, is the limit). Neutral interior (128/128) is left
  * pristine so flat areas stay perfectly still.
  *
  * @param ss Supersample factor: render at `res × ss` and
  *        area-downsample back to `res`. Cheap AA for low bake
- *        resolutions (the JS sample loop is ~4×, but PNG encoding — the
- *        expensive part — stays at the small target size).
+ *        resolutions (the JS sample loop is ~4×, but PNG encoding - the
+ *        expensive part - stays at the small target size).
  */
 export function bakeTile(
 	sample: Sampler,
@@ -125,7 +125,7 @@ export function bakeTile(
 	specCtx.putImageData(specImg, 0, 0);
 	if (dbgCtx && dbgImg) dbgCtx.putImageData(dbgImg, 0, 0);
 
-	// Area-downsample the supersampled render (SSAA — see `ss`). Averages
+	// Area-downsample the supersampled render (SSAA - see `ss`). Averages
 	// the 2×2 sample quads, which also averages most of the dither grain.
 	let mapOut: HTMLCanvasElement = mapCanvas;
 	let specOut: HTMLCanvasElement = specCanvas;
@@ -150,8 +150,8 @@ export function bakeTile(
 
 	// Sub-pixel smoothing of the quantized + dithered field (0.5 CSS px,
 	// scaled with the bake resolution). Combined with the dither this
-	// raises the map's *effective* channel precision — the low-pass pulls
-	// the ±½-level grain back toward the true field values — and gently
+	// raises the map's *effective* channel precision - the low-pass pulls
+	// the ±½-level grain back toward the true field values - and gently
 	// relaxes the steepest displacement gradients. The rendered content is
 	// displaced BY this field, not blended with it, so nothing visible
 	// gets blurred; the interior stays exactly neutral (128 → 128).
@@ -187,7 +187,7 @@ export function renderMaps({width: W, height: H, radii, options: o}: MapsParams)
 	const res = resolveRenderScale(o, W, H);
 	const rimGray = clamp(Math.round(o.specular.gray || 120), 0, 255);
 	// Supersample low bake resolutions (render above the target grid, then
-	// area-downsample) — near-free AA where samples are sparse (the JS
+	// area-downsample) - near-free AA where samples are sparse (the JS
 	// sample loop is ~ss² but PNG encoding, the expensive part, stays at
 	// the small target size). Tiered so dense grids don't balloon.
 	const ss = res <= 1 ? 4 : res < 2 ? 2 : 1;
@@ -224,12 +224,12 @@ type CornerMapFn = (x: number, y: number, vw: number, vh: number, tw: number, th
  * geometry**: `width = 2·rx + straightSpan`, `height = 2·ry + straightSpan`
  * (straightSpan = the edge length between tangent boxes). When the
  * straight span is ≥ bezel, the tile is a plain corner + straight
- * continuation; when it wraps (pills, circles — tangent boxes meet at the
+ * continuation; when it wraps (pills, circles - tangent boxes meet at the
  * midline), the virtual element *is* the real end shape, so the wrapping
  * arc field is reproduced exactly and the opposite strips simply collapse
  * to zero length. Seams match analytically at tile/strip boundaries.
  *
- * Exact for uniform radii (rounded rects, pills, circles) — which
+ * Exact for uniform radii (rounded rects, pills, circles) - which
  * `resolveRadii`'s CSS overlap scaling produces for the common CSS
  * patterns. Mixed per-corner radii in a wrapped dimension fall back to a
  * mirrored approximation of the dominant corner.
@@ -240,7 +240,7 @@ export function renderTiles({radii, options: o, width: W, height: H}: TilesParam
 	const res = resolveRenderScale(o, W, H, tileExtent(radii, bezel));
 	const rimGray = clamp(Math.round(o.specular.gray || 120), 0, 255);
 	// Supersample low bake resolutions (render above the target grid, then
-	// area-downsample) — near-free AA where samples are sparse (the JS
+	// area-downsample) - near-free AA where samples are sparse (the JS
 	// sample loop is ~ss² but PNG encoding, the expensive part, stays at
 	// the small target size). Tiered so dense grids don't balloon.
 	const ss = res <= 1 ? 4 : res < 2 ? 2 : 1;
@@ -259,11 +259,11 @@ export function renderTiles({radii, options: o, width: W, height: H}: TilesParam
 	const zero: CornerRadii = {tl: R0, tr: R0, br: R0, bl: R0};
 
 	// Straight spans between the corner tangent boxes (0 = wrapped: pill
-	// ends, circles — the tangent boxes meet at the midline). The TRUE
+	// ends, circles - the tangent boxes meet at the midline). The TRUE
 	// spans are used: the virtual element then reproduces the baked size's
 	// field exactly, including seam bands where two corner fields meet at
 	// the midline. Sizes whose span crosses the bezel (square → rectangle)
-	// get their own bake — the tile key includes the span class of each
+	// get their own bake - the tile key includes the span class of each
 	// side, so the controller re-bakes on span-class changes.
 	const spans = straightSpans(W, H, radii);
 
@@ -294,7 +294,7 @@ export function renderTiles({radii, options: o, width: W, height: H}: TilesParam
 	}
 
 	// Edge strips: a sharp-cornered virtual square sampled along its centre
-	// line — a pure straight-edge field, uniform along the axis. Each strip
+	// line - a pure straight-edge field, uniform along the axis. Each strip
 	// is baked so its STRONG end (d = 0) lands on the border side at
 	// placement, with the inward direction pointing into the element:
 	//   top    row 0        at the top border,    pulling down  ✓

@@ -97,9 +97,12 @@ export class LiquidGlass {
 	}
 	/** Bake key of the last shared-mismatch warning (anti-spam). */
 	private _mismatchKey: string;
-	/** Set by destroy() — async callbacks (fonts.ready, rAF, throttled
+	/** Set by destroy() - async callbacks (fonts.ready, rAF, throttled
 	 * schedules) must not touch the DOM afterwards. */
 	private _destroyed = false;
+	/** Capability class currently added to the element (from
+	 * `supportedClass`/`fallbackClass`), or null. */
+	private _supportClassApplied: string | null = null;
 	private _prevBackdrop: string;
 	private _schedule: () => void;
 
@@ -139,7 +142,7 @@ export class LiquidGlass {
 			el.style.setProperty('backdrop-filter', this.options.fallback);
 			el.style.setProperty('-webkit-backdrop-filter', this.options.fallback);
 			// The negative may have been a transient false negative during early
-			// load — keep observing and retry shortly after first paint.
+			// load - keep observing and retry shortly after first paint.
 			this._observe();
 			requestAnimationFrame(() => this.refresh());
 			return;
@@ -183,6 +186,7 @@ export class LiquidGlass {
 	 */
 	refresh(): void {
 		if (this._destroyed) return;
+		this._applySupportClasses();
 		const W = this.el.offsetWidth;
 		const H = this.el.offsetHeight;
 		if (!W || !H) return;
@@ -192,7 +196,7 @@ export class LiquidGlass {
 		this._radiusKey = radiusKey(radii);
 		this._tileInfo = {bezel, thickness, tileKey: tileKey(radii, W, H, bezel)};
 		if (!checkSvgBackdropSupport()) {
-			// No SVG backdrop-filter support (yet) — degrade to the CSS fallback.
+			// No SVG backdrop-filter support (yet) - degrade to the CSS fallback.
 			this.el.style.setProperty('backdrop-filter', this.options.fallback);
 			this.el.style.setProperty('-webkit-backdrop-filter', this.options.fallback);
 			return;
@@ -240,7 +244,7 @@ export class LiquidGlass {
 							this._sizeKey +
 							' [' +
 							sig +
-							'] — using a private filter. ' +
+							'] - using a private filter. ' +
 							'Sharers must match size, corner radii and bake options.',
 					);
 				}
@@ -253,7 +257,7 @@ export class LiquidGlass {
 		}
 
 		// 9-slice assembly (the only path): size-independent tiles fetched
-		// from (or baked into) the shared tile cache — one bake per distinct
+		// from (or baked into) the shared tile cache - one bake per distinct
 		// shape, not per element. The resolved bezel/thickness are frozen
 		// into the bake and the tile key, so later relayouts use stable
 		// values.
@@ -286,7 +290,7 @@ export class LiquidGlass {
 
 	/**
 	 * Cheap re-layout: re-position the baked 9-slice tiles
-	 * for a new element size (pure filter-attribute updates — no canvas
+	 * for a new element size (pure filter-attribute updates - no canvas
 	 * baking, no PNG re-encoding). Safe to call every animation frame.
 	 *
 	 * @fires LiquidGlass#lglass:relayout
@@ -324,7 +328,7 @@ export class LiquidGlass {
 	 * @returns this (chainable)
 	 */
 	setOptions(patch?: LiquidGlassOptions): this {
-		const cheap = new Set<string>(['scale', 'saturate', 'blur']);
+		const cheap = new Set<string>(['scale', 'saturate', 'blur', 'supportedClass', 'fallbackClass']);
 		let needsMaps = false;
 		if (patch) {
 			for (const k of Object.keys(patch) as (keyof LiquidGlassOptions)[]) {
@@ -336,6 +340,7 @@ export class LiquidGlass {
 			}
 		}
 		this.options = resolveOptions(this.options, patch);
+		this._applySupportClasses();
 		if (!checkSvgBackdropSupport()) return this;
 		if (needsMaps) this.refresh();
 		else this._rebuildCheap();
@@ -353,11 +358,34 @@ export class LiquidGlass {
 		if (this._mo) this._mo.disconnect();
 		this._detachShared(); // refcount the shared filter
 		if (this._filterNode) this._filterNode.remove();
+		if (this._supportClassApplied) {
+			this.el.classList.remove(this._supportClassApplied);
+			this._supportClassApplied = null;
+		}
 		this.el.style.setProperty('backdrop-filter', this._prevBackdrop);
 		this.el.classList.remove('has-liquid-glass');
 	}
 
 	/* ------------------------- internals ------------------------- */
+
+	/**
+	 * Sync the capability class on the element: `supportedClass` when SVG
+	 * `backdrop-filter` works, `fallbackClass` when the CSS fallback is
+	 * active. Idempotent - swaps the class if the options or the detected
+	 * capability changed.
+	 */
+	private _applySupportClasses(): void {
+		const el = this.el;
+		if (this._supportClassApplied) {
+			el.classList.remove(this._supportClassApplied);
+			this._supportClassApplied = null;
+		}
+		const cls = checkSvgBackdropSupport() ? this.options.supportedClass : this.options.fallbackClass;
+		if (cls) {
+			el.classList.add(cls);
+			this._supportClassApplied = cls;
+		}
+	}
 
 	/** Dispatch a typed event on the target element. */
 	private _emit<K extends keyof LiquidGlassEvents & string>(type: K, detail: LiquidGlassEvents[K]): void {
@@ -368,8 +396,8 @@ export class LiquidGlass {
 	 * Observe size + radius changes. A size-only change with
 	 * an unchanged tile key (same radii AND same span classes) is routed to
 	 * the cheap {@link LiquidGlass.relayout} (per-frame safe); anything else
-	 * — radius change, or a span crossing the bezel (square ↔ rectangle,
-	 * wrap ↔ straight) — re-bakes via the throttled `refresh`.
+	 * - radius change, or a span crossing the bezel (square ↔ rectangle,
+	 * wrap ↔ straight) - re-bakes via the throttled `refresh`.
 	 */
 	private _observe(): void {
 		const measure = (): {W: number; H: number; size: string; tileKey: string} | null => {
@@ -386,7 +414,7 @@ export class LiquidGlass {
 			const curKey = this._tileInfo ? this._tileInfo.tileKey : null;
 			if (m.size === this._sizeKey && m.tileKey === curKey) return;
 			if (this._shared) {
-				// Followers don't own the bake — re-validate the sharing
+				// Followers don't own the bake - re-validate the sharing
 				// contract (re-attach, or warn + fall back to a private filter).
 				this._schedule();
 				return;
@@ -411,7 +439,7 @@ export class LiquidGlass {
 	}
 
 	/**
-	 * Bake a full-size debug map (diagnostics only — this is
+	 * Bake a full-size debug map (diagnostics only - this is
 	 * the one full-size bake, done on refresh, never on relayout).
 	 */
 	private _bakeDebug(W: number, H: number, radii: CornerRadii): void {
@@ -486,7 +514,7 @@ export class LiquidGlass {
 
 	/**
 	 * Attach this instance to an existing shared-filter entry (follower
-	 * role): no baking — reference the group's filter and mirror its bake
+	 * role): no baking - reference the group's filter and mirror its bake
 	 * outputs so cheap option rebuilds keep working locally.
 	 */
 	private _attachShared(entry: SharedFilterEntry): void {
@@ -536,7 +564,7 @@ export class LiquidGlass {
 	 */
 	private _buildFilter(W: number, H: number): void {
 		// For shared groups the previous filter may be tracked on the entry
-		// (e.g. a follower rebuilding it) — always retire the old node.
+		// (e.g. a follower rebuilding it) - always retire the old node.
 		const prev = this._shared ? this._shared.filterNode : this._filterNode;
 		if (prev) prev.remove();
 
@@ -559,12 +587,12 @@ export class LiquidGlass {
 			this.refresh();
 			return;
 		}
-		// Shared filters rebuild at the group's bake size — never at the
+		// Shared filters rebuild at the group's bake size - never at the
 		// local element's size, or the group's tile layout would corrupt.
 		const s = this._shared;
 		const W = s ? s.W : this.el.offsetWidth;
 		const H = s ? s.H : this.el.offsetHeight;
-		// Tiles are still valid — only filter attributes changed.
+		// Tiles are still valid - only filter attributes changed.
 		this._buildFilter(W, H);
 		const url = 'url(#' + this._filterId() + ')';
 		this.el.style.setProperty('backdrop-filter', url);

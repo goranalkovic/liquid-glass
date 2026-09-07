@@ -34,7 +34,7 @@ export interface GlassFilterOptions {
  *
  * Owns the full primitive chain (see {@link GlassFilterNode.build}) and the
  * 8 positioned feImage slices; {@link GlassFilterNode.layout} re-positions
- * them for a new element size as pure attribute updates — safe to call
+ * them for a new element size as pure attribute updates - safe to call
  * every animation frame.
  */
 export class GlassFilterNode {
@@ -62,7 +62,7 @@ export class GlassFilterNode {
 	 * blend(lg_spec_faded OVER lg_base)
 	 * ```
 	 * The rim is therefore a hyper-saturated copy of the refracted backdrop
-	 * masked to a thin line, topped by a faint gray glint — not a white
+	 * masked to a thin line, topped by a faint gray glint - not a white
 	 * screen-blend glow.
 	 */
 	build(id: string, tiles: LiquidGlassTiles, W: number, H: number, o: GlassFilterOptions): void {
@@ -98,7 +98,7 @@ export class GlassFilterNode {
 		// Neutral flood + 8 positioned tile feImages per layer, composed
 		// with a sequential feComposite "over" chain.
 		//
-		// NOTE: do NOT use feMerge here — Chrome rasterizes feMerge with
+		// NOTE: do NOT use feMerge here - Chrome rasterizes feMerge with
 		// multiple subregion'd feImages INCORRECTLY inside backdrop-filter
 		// (it renders correctly in standalone SVG filters, but under
 		// backdrop-filter only part of the assembly lands where it should,
@@ -164,7 +164,7 @@ export class GlassFilterNode {
 				'rgb(128,128,128)',
 				SLICES.map((s) => ({key: s.key, href: s.map})),
 			);
-			// Specular: transparent base (no flood) — first tile is the base.
+			// Specular: transparent base (no flood) - first tile is the base.
 			chain(
 				'lg_spec',
 				null,
@@ -172,7 +172,7 @@ export class GlassFilterNode {
 			);
 		}
 
-		// Slight pre-displacement blur of the backdrop (reference default: 1).
+		// Slight pre-displacement blur of the backdrop (default: 0.2).
 		let source = 'SourceGraphic';
 		if (o.blur > 0) {
 			mk('feGaussianBlur', {in: 'SourceGraphic', stdDeviation: o.blur, result: 'lg_blur'});
@@ -236,7 +236,7 @@ export class GlassFilterNode {
 	 *
 	 * Layout (CSS px, filter user space): corner tiles keep their baked
 	 * size at the four corners; the 1-px edge strips stretch between them
-	 * (lossless — they are uniform along their axis); the neutral interior
+	 * (lossless - they are uniform along their axis); the neutral interior
 	 * comes from the `feFlood`. Degenerate spans collapse to ~0.
 	 */
 	layout(W: number, H: number): void {

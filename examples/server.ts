@@ -1,5 +1,5 @@
 /**
- * Tiny server for the React example — Bun standalone, zero bundler config.
+ * Tiny server for the React example - Bun standalone, zero bundler config.
  *
  * The HTML import below is bundled by Bun's built-in pipeline (TSX, CSS and
  * the `liquid-glass` source resolved through tsconfig `paths`), and running

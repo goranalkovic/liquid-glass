@@ -1,4 +1,4 @@
-/* Liquid Glass React example — scene, glass cosmetics and playground panel. */
+/* Liquid Glass React example - scene, glass cosmetics and playground panel. */
 
 :root {
 	--violet: #7c5cff;
@@ -168,41 +168,6 @@ button {
 		0 24px 48px rgba(0, 0, 0, 0.38);
 }
 
-/* ---- top dock ---- */
-.dock {
-	top: 22px;
-	left: 50%;
-	transform: translateX(-50%);
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 10px 14px;
-	border-radius: 999px;
-}
-.dock a {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--ink);
-	text-decoration: none;
-	font-size: 13px;
-	font-weight: 600;
-	letter-spacing: 0.02em;
-	padding: 8px 14px;
-	border-radius: 999px;
-	transition: background 0.2s;
-}
-.dock a:hover {
-	background: rgba(255, 255, 255, 0.1);
-}
-.dock i {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	background: var(--c, #fff);
-	box-shadow: 0 0 10px var(--c, #fff);
-}
-
 /* ---- hero card ---- */
 .card {
 	left: calc(50% - 160px);
@@ -282,79 +247,12 @@ button {
 	font-weight: 600;
 }
 
-/* ---- music chip ---- */
-.chip {
-	left: 26px;
-	bottom: 26px;
-	border-radius: 22px;
-	display: flex;
-	align-items: center;
-	gap: 14px;
-	padding: 14px 20px 14px 14px;
-}
-.album {
-	width: 46px;
-	height: 46px;
-	border-radius: 14px;
-	flex: none;
-	background: conic-gradient(from 210deg, var(--violet), var(--magenta), var(--cyan), var(--violet));
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-}
-.chip .meta {
-	line-height: 1.3;
-}
-.chip .meta b {
-	display: block;
-	font-size: 13px;
-}
-.chip .meta span {
-	font-size: 11px;
-	color: rgba(255, 255, 255, 0.6);
-}
-.eq {
-	display: flex;
-	align-items: flex-end;
-	gap: 3px;
-	height: 20px;
-	margin-left: 6px;
-}
-.eq b {
-	width: 3px;
-	border-radius: 2px;
-	background: rgba(255, 255, 255, 0.85);
-	animation: bounce 1s ease-in-out infinite;
-	transform-origin: bottom;
-}
-.eq b:nth-child(1) {
-	height: 40%;
-	animation-delay: -0.1s;
-}
-.eq b:nth-child(2) {
-	height: 90%;
-	animation-delay: -0.5s;
-}
-.eq b:nth-child(3) {
-	height: 60%;
-	animation-delay: -0.3s;
-}
-.eq b:nth-child(4) {
-	height: 100%;
-	animation-delay: -0.8s;
-}
-.eq b:nth-child(5) {
-	height: 50%;
-	animation-delay: -0.2s;
-}
-@keyframes bounce {
-	50% {
-		transform: scaleY(0.35);
-	}
-}
-
 /* ---- fab ---- */
 .fab {
-	right: 26px;
-	bottom: 26px;
+	/* sits on the top scrolling text band so the refraction is previewed
+	 against moving type - drag it anywhere */
+	left: 26px;
+	top: calc(6vh + 30px);
 	width: 62px;
 	height: 62px;
 	border-radius: 50%;
@@ -364,10 +262,13 @@ button {
 	line-height: 1;
 	display: grid;
 	place-items: center;
-	transition: transform 0.2s;
+	transition:
+		height 0.2s,
+		width 0.2s;
 }
 .fab:hover {
-	transform: scale(1.06);
+	width: 96px;
+	height: 96px;
 }
 
 /* ---- draggable lenses (circle + shape lab) ---- */
@@ -400,38 +301,38 @@ button {
 
 /* shape lab: square / rectangle × sharp / rounded (draggable) */
 .lens-sq-sharp {
-	left: calc(50% - 345px);
+	left: 26px;
 	top: calc(100vh - 272px);
 	width: 118px;
 	height: 118px;
 	border-radius: 0;
 }
 .lens-sq-rounded {
-	left: calc(50% - 197px);
+	left: 172px;
 	top: calc(100vh - 272px);
 	width: 118px;
 	height: 118px;
 	border-radius: 26px;
 }
 .lens-rect-sharp {
-	left: calc(50% - 49px);
+	left: 318px;
 	top: calc(100vh - 272px);
 	width: 182px;
 	height: 118px;
 	border-radius: 0;
 }
 .lens-rect-rounded {
-	left: calc(50% + 163px);
+	left: 530px;
 	top: calc(100vh - 272px);
 	width: 182px;
 	height: 118px;
 	border-radius: 22px;
 }
 
-/* ---- hover-grow pill (animated width — the 9-slice use case) ---- */
+/* ---- hover-grow pill (animated width - the 9-slice use case) ---- */
 .grow {
-	right: 26px;
-	top: 42%;
+	left: 26px;
+	top: calc(42% + 116px);
 	width: 168px;
 	height: 54px;
 	border-radius: 27px;
@@ -448,7 +349,7 @@ button {
 	transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .grow:hover {
-	width: 344px;
+	width: 240px;
 }
 .grow .chev {
 	transition: transform 0.4s;
@@ -457,15 +358,6 @@ button {
 }
 .grow:hover .chev {
 	transform: translateX(6px);
-}
-.grow .lbl-extra {
-	opacity: 0;
-	transition: opacity 0.3s 0.15s;
-	font-size: 12px;
-	color: rgba(255, 255, 255, 0.65);
-}
-.grow:hover .lbl-extra {
-	opacity: 1;
 }
 
 /* ---- square → rectangle morph (9-slice use case #2) ---- */
@@ -501,15 +393,6 @@ button {
 }
 .morph:hover .glyph {
 	width: 28px;
-}
-.morph .lbl {
-	opacity: 0;
-	transition: opacity 0.3s 0.15s;
-	font-size: 12px;
-	color: rgba(255, 255, 255, 0.65);
-}
-.morph:hover .lbl {
-	opacity: 1;
 }
 
 /* ============ control panel ============ */
@@ -627,7 +510,7 @@ button {
 	background: #08080f;
 }
 /* The map is element-shaped by design: feDisplacementMap is sampled 1:1 in
- element space — the intrinsic size keeps the preview unstretched. */
+ element space - the intrinsic size keeps the preview unstretched. */
 .maplabel {
 	font-size: 10.5px;
 	color: rgba(255, 255, 255, 0.45);
@@ -668,39 +551,14 @@ button {
 	place-items: center;
 }
 
-.credit {
-	position: fixed;
-	bottom: 14px;
-	left: 50%;
-	transform: translateX(-50%);
-	font-size: 11px;
-	color: rgba(255, 255, 255, 0.45);
-	z-index: 5;
-	white-space: nowrap;
-}
-.credit a {
-	color: rgba(255, 255, 255, 0.7);
-}
-
 @media (max-width: 900px) {
 	.card {
 		left: 50%;
 		top: 46%;
 	}
-	.credit {
-		display: none;
-	}
 	.lens-circle {
 		left: 8vw;
 		top: 60vh;
-	}
-	.morph {
-		left: 8vw;
-		top: 30vh;
-	}
-	.grow {
-		right: 8vw;
-		top: 30vh;
 	}
 }
 @media (max-width: 760px) {
@@ -729,8 +587,7 @@ button {
 }
 @media (prefers-reduced-motion: reduce) {
 	.blob,
-	.marquee span,
-	.eq b {
+	.marquee span {
 		animation: none !important;
 	}
 }

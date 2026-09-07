@@ -11,8 +11,8 @@ import {renderTiles} from './bake';
 
 /**
  * Bake key → tile set. Corner/strip tiles depend on the
- * corner radii, the per-side span classes and the bake options — but NOT
- * on the element size — so every element whose key matches reuses an
+ * corner radii, the per-side span classes and the bake options - but NOT
+ * on the element size - so every element whose key matches reuses an
  * existing bake instead of re-rendering it. (The `<filter>` DOM itself
  * stays per element: tile *positions* differ per size.)
  */
@@ -23,7 +23,7 @@ const TILE_CACHE_MAX = 24;
 /**
  * Fetch (or bake and cache) the 9-slice tile set for an element geometry.
  * The key is the tile key (radii + span classes) plus the bake signature
- * (profile, resolved bezel/thickness, rim shaping) — two elements share a
+ * (profile, resolved bezel/thickness, rim shaping) - two elements share a
  * cached set iff their tiles would be pixel-identical. Note that
  * `'auto'` bezel/thickness resolve per size, so differently-sized auto
  * elements correctly get separate entries.

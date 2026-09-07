@@ -15,7 +15,7 @@ import {sanitizeFilterId} from './geometry';
 export interface StaticFilter {
 	/** DOM id of the generated `<filter>` element. */
 	readonly id: string;
-	/** `url(#id)` — ready for `backdrop-filter` / `filter`. */
+	/** `url(#id)` - ready for `backdrop-filter` / `filter`. */
 	readonly url: string;
 	/** The generated `<filter>` element (lives in the hidden defs host;
 	 * detached once {@link StaticFilter.destroy} is called). */
@@ -24,7 +24,7 @@ export interface StaticFilter {
 	readonly maxDisplacement: number;
 	/**
 	 * Re-position the tiles for a new element size (pure attribute
-	 * updates — no re-bake). Safe to call every animation frame.
+	 * updates - no re-bake). Safe to call every animation frame.
 	 */
 	layout(width: number, height: number): void;
 	/** Remove the `<filter>` from the DOM. */
@@ -48,12 +48,12 @@ export interface CreateFilterParams {
 let staticUid = 0;
 
 /**
- * Generate a static liquid-glass SVG `<filter>` for a border radius —
+ * Generate a static liquid-glass SVG `<filter>` for a border radius -
  * no element controller, no observers. The filter is appended to the
  * hidden defs host and referenced from CSS:
  *
  * ```ts
- * import { createFilter } from 'liquid-glass';
+ * import { createFilter } from '@goran.alkovic/liquid-glass';
  *
  * const f = createFilter({ borderRadius: 28, width: 420, height: 56 });
  * el.style.backdropFilter = f.url; // Chromium: full refraction
@@ -62,12 +62,12 @@ let staticUid = 0;
  * ```
  *
  * Tiles come from the same cache the element controllers use, so identical
- * geometries share bakes. They are size-independent — `layout` re-positions
+ * geometries share bakes. They are size-independent - `layout` re-positions
  * them for new sizes without re-baking. Note that SVG filters referenced
  * from `backdrop-filter` only work in Chromium; referenced from a regular
  * `filter` they work anywhere SVG filters do.
  *
- * If `options.filterId` is given it becomes the DOM id (sanitized) — pass a
+ * If `options.filterId` is given it becomes the DOM id (sanitized) - pass a
  * unique value per filter unless the geometry and options are identical and
  * sharing is intended.
  *

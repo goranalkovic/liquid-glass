@@ -11,7 +11,7 @@ let svgBackdropSupported: boolean | null = null;
  * Only Chromium implements it; Safari parses the value but ignores it,
  * so a UA check is unfortunately required.
  *
- * Computed lazily (and cached) instead of at script-evaluation time —
+ * Computed lazily (and cached) instead of at script-evaluation time -
  * some embedded browsers return false negatives for `CSS.supports`
  * during early document loading.
  */

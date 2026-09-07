@@ -10,7 +10,7 @@ let defsHost: SVGElement | null = null;
 
 /**
  * Lazily create (or reuse) the hidden SVG hosting every generated
- * `<filter>`. Must not be `display: none` — that breaks filter references.
+ * `<filter>`. Must not be `display: none` - that breaks filter references.
  */
 export function getDefsHost(): SVGElement {
 	if (defsHost && defsHost.isConnected) return defsHost;

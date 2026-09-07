@@ -1,5 +1,5 @@
 {
-	"name": "liquid-glass",
+	"name": "@goran.alkovic/liquid-glass",
 	"version": "1.0.0",
 	"description": "\"Liquid Glass\"-like refraction for any DOM element using a SVG displacement map-based backdrop-filter, without extra dependencies.",
 	"keywords": [
@@ -21,6 +21,9 @@
 	},
 	"bugs": {
 		"url": "https://github.com/goranalkovic/liquid-glass/issues"
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"sideEffects": false,
 	"type": "module",

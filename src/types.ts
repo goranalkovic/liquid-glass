@@ -27,7 +27,7 @@ export type SurfaceName = 'convex-squircle' | 'convex-circle' | 'concave' | 'lip
 export interface LiquidGlassSurface {
 	/** Glass thickness envelope at t ∈ [0..1]. t = 0 is the element border,
 	 * t = 1 is the end of the bezel; f(0) = 0 (full thickness) and f(1) = 1
-	 * (flat interior) for every profile. Monotonically increasing — this
+	 * (flat interior) for every profile. Monotonically increasing - this
 	 * border-peaked, decaying envelope is what keeps rounded corners
 	 * crease-free (see the `concave` profile notes). */
 	f(t: number): number;
@@ -65,7 +65,7 @@ export interface LiquidGlassSpecularOptions {
 	angle?: number;
 	/**
 	 * Saturation boost applied to the refracted backdrop **inside the rim
-	 * line only** — this colored edge glint is the signature of the
+	 * line only** - this colored edge glint is the signature of the
 	 * reference look. Cheap: does not re-bake the maps.
 	 */
 	saturation?: number;
@@ -95,7 +95,7 @@ export interface LiquidGlassOptions {
 	 */
 	bezel?: number | 'auto';
 	/**
-	 * Virtual glass thickness in CSS pixels — the main strength knob
+	 * Virtual glass thickness in CSS pixels - the main strength knob
 	 * (border displacement scales roughly linearly with it).
 	 * `'auto'` = bezel width.
 	 */
@@ -114,22 +114,23 @@ export interface LiquidGlassOptions {
 	 */
 	saturate?: number;
 	/**
-	 * Backdrop blur in px applied *before* displacement (the reference
-	 * implementation always keeps a slight blur, default 1). Cheap.
+	 * Backdrop blur in px applied *before* displacement (a whisper of blur
+	 * - default 0.2 - keeps sub-pixel sampling smooth without visibly
+	 * softening the backdrop). Cheap.
 	 */
 	blur?: number;
 	/** Rim-light configuration. */
 	specular?: LiquidGlassSpecularOptions;
 	/**
 	 * Share one baked SVG filter between several elements. Every instance
-	 * created with the same `filterId` references a single `<filter>` —
+	 * created with the same `filterId` references a single `<filter>` -
 	 * one tile bake and one filter DOM subtree for the whole group (the
 	 * browser still applies the filter per element, so each element
 	 * refracts its own backdrop). Group contract: identical size, corner
 	 * radii and bake options (`surface`, `ior`, `renderScale`, rim
 	 * angle/width/gray, resolved bezel/thickness); mismatching elements
 	 * fall back to a private filter and log a warning. The first element
-	 * created for an id owns the bake — its geometry changes re-bake the
+	 * created for an id owns the bake - its geometry changes re-bake the
 	 * whole group; destroying the last member removes the shared filter.
 	 * Cheap options (`scale`, `saturate`, `blur`,
 	 * `specular.opacity/saturation`) rebuild the shared filter for every
@@ -137,10 +138,10 @@ export interface LiquidGlassOptions {
 	 */
 	filterId?: string | null;
 	/**
-	 * Bake quality — the resolution multiplier for the tile bitmaps.
+	 * Bake quality - the resolution multiplier for the tile bitmaps.
 	 * `'auto'` scales with how large the element renders (geometric mean
 	 * of w×h): ≤150px bakes at 0.75×, ≤300px at 1×, ≤450px at 1.5×,
-	 * larger at 2× — softness is imperceptible at small sizes and the
+	 * larger at 2× - softness is imperceptible at small sizes and the
 	 * bake is nearly free. Tiers are grid-aligned multipliers; off-grid
 	 * values (e.g. an early 5% offset experiment) caused visible
 	 * resampling glitches. Bake cost is capped by tile size. Explicit
@@ -159,10 +160,24 @@ export interface LiquidGlassOptions {
 	 */
 	debug?: boolean;
 	/**
+	 * Class added to the element when SVG `backdrop-filter` is supported
+	 * (the real refraction is active). Removed on
+	 * {@link LiquidGlass.destroy} and swapped automatically if capability
+	 * detection changes. Pair with `fallbackClass` to branch your CSS on
+	 * capability without calling {@link isSupported} yourself.
+	 */
+	supportedClass?: string | null;
+	/**
+	 * Class added to the element when the browser does NOT support SVG
+	 * `backdrop-filter` (the CSS `fallback` styling is active). Removed on
+	 * {@link LiquidGlass.destroy}. Pair with `supportedClass`.
+	 */
+	fallbackClass?: string | null;
+	/**
 	 * Generate the effect once for the geometry at creation and never
 	 * update it automatically: no resize/radius observers, no late
 	 * `fonts.ready` refresh. Ideal for elements whose size is known and
-	 * fixed — zero ongoing work after setup. Cheap `setOptions` (scale,
+	 * fixed - zero ongoing work after setup. Cheap `setOptions` (scale,
 	 * saturate, blur, specular opacity/saturation) still applies, and
 	 * `refresh()` can be called manually after a known layout change. If
 	 * the element is hidden (zero size) at creation, call `refresh()`
@@ -197,6 +212,8 @@ export interface LiquidGlassResolvedOptions {
 	fallback: string;
 	debug: boolean;
 	static: boolean;
+	supportedClass: string | null;
+	fallbackClass: string | null;
 }
 
 /**
@@ -220,7 +237,7 @@ export interface LiquidGlassMaps {
 }
 
 /**
- * Baked 9-slice tile set — size-independent, re-positionable.
+ * Baked 9-slice tile set - size-independent, re-positionable.
  */
 export interface LiquidGlassTiles {
 	/** Bezel width the tiles were baked with. */
@@ -235,7 +252,7 @@ export interface LiquidGlassTiles {
 	 */
 	corners: Record<CornerKey, {map: string; spec: string; w: number; h: number}>;
 	/**
-	 * Edge strips (`top`, `bottom` — 1×bezel; `left`, `right` — bezel×1).
+	 * Edge strips (`top`, `bottom` - 1×bezel; `left`, `right` - bezel×1).
 	 * Uniform along their axis, so stretching them is lossless.
 	 */
 	edges: Record<'top' | 'bottom' | 'left' | 'right', {map: string; spec: string}>;
@@ -266,10 +283,10 @@ export interface LiquidGlassRelayoutDetail {
 
 /**
  * Typed event map for the events a {@link LiquidGlass} instance fires on
- * its element. The interface is open — declare-merge extra custom events:
+ * its element. The interface is open - declare-merge extra custom events:
  *
  * ```ts
- * declare module 'liquid-glass' {
+ * declare module '@goran.alkovic/liquid-glass' {
  *   interface LiquidGlassEvents {
  *     'myapp:custom': { reason: string };
  *   }

@@ -11,8 +11,8 @@
 		"skipLibCheck": true,
 		"noEmit": true,
 		"paths": {
-			"liquid-glass": ["../src/index.ts"],
-			"liquid-glass/react": ["../src/react.ts"]
+			"@goran.alkovic/liquid-glass": ["../src/index.ts"],
+			"@goran.alkovic/liquid-glass/react": ["../src/react.ts"]
 		}
 	},
 	"include": ["src"]

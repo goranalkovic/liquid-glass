@@ -1,5 +1,5 @@
 /**
- * LiquidGlass — Apple-style "Liquid Glass" refraction for any DOM element.
+ * LiquidGlass - Apple-style "Liquid Glass" refraction for any DOM element.
  *
  * Implements the technique described in
  * https://kube.io/blog/liquid-glass-css-svg/ :
@@ -19,13 +19,13 @@
  *     separate gray-on-alpha PNG: only the border facing the light gets a
  *     line. Inside the SVG filter that line masks a hyper-saturated copy of
  *     the refracted backdrop (`feComposite in`), plus a faint gray glint on
- *     top (`feComponentTransfer` fade) — both blended `normal`.
+ *     top (`feComponentTransfer` fade) - both blended `normal`.
  *  5. An SVG filter chain (blur → feImage → feDisplacementMap → rim
  *     compositing) is referenced from `backdrop-filter: url(#id)` so the
  *     element refracts whatever is painted beneath it.
  *
  * The effect is assembled 9-slice style: size-independent corner/edge
- * tiles are baked once per shape (corner radii + bake options — cached and
+ * tiles are baked once per shape (corner radii + bake options - cached and
  * shared across elements), then re-positioned as pure filter-attribute
  * updates whenever the element resizes, so animated widths/heights (hover
  * stretches, transitions) never trigger a re-bake. Re-bakes (throttled)
@@ -38,12 +38,12 @@
  * elements (each still refracts its own backdrop).
  *
  * Browser support: SVG filters referenced from `backdrop-filter` currently
- * work only in Chromium. Other browsers get a plain CSS `backdrop-filter`
+ * work only in Chromium. Unsupported browsers get a plain CSS `backdrop-filter`
  * fallback. Everything runs from `file://`; no dependencies.
  *
  * Source layout: `types` (public types) · `options` · `surfaces` ·
  * `sampler` · `bake` · `cache` · `geometry` · `svg` · `filter` ·
- * `controller` — everything below the controller is pure (or canvas-only)
+ * `controller` - everything below the controller is pure (or canvas-only)
  * and unit-testable in isolation.
  *
  * @module liquid-glass
@@ -72,7 +72,7 @@ export type {CreateFilterParams, StaticFilter} from './static-filter';
  *
  * @example
  * ```ts
- * import { create } from 'liquid-glass';
+ * import { create } from '@goran.alkovic/liquid-glass';
  * create(document.querySelector('.card')!, { surface: 'convex-squircle' });
  * ```
  */
@@ -91,7 +91,7 @@ export function applyAll(selector?: string, opts?: LiquidGlassOptions): LiquidGl
 }
 
 /**
- * Generate maps standalone (no element, filter or observers) — useful
+ * Generate maps standalone (no element, filter or observers) - useful
  * for testing, inspection or custom compositing.
  *
  * @throws {Error} If neither `radii` nor `borderRadius` is given.
@@ -107,7 +107,7 @@ export function generateMaps(params: GenerateMapsParams): LiquidGlassMaps {
 
 /**
  * Generate size-independent 9-slice tiles standalone (no element, filter
- * or observers) — one bake per border radius, reusable across sizes.
+ * or observers) - one bake per border radius, reusable across sizes.
  *
  * @throws {Error} If neither `radii` nor `borderRadius` is given.
  */
@@ -121,7 +121,7 @@ export function generateTiles(params: GenerateTilesParams): LiquidGlassTiles {
 }
 
 /**
- * Whether SVG backdrop-filters work in this browser. Lazy and cached —
+ * Whether SVG backdrop-filters work in this browser. Lazy and cached -
  * call it (don't read it) so early-load false negatives can recover.
  */
 export function isSupported(): boolean {

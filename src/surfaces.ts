@@ -37,7 +37,7 @@ const SURFACES = new Map<SurfaceName, LiquidGlassSurface>([
 	 *
 	 * The thickness envelope matches convex-circle (full at the border,
 	 * decaying to zero) while the slope is negated (bowl): rays bend
-	 * *outward*. The border-peaked, monotonic envelope is deliberate —
+	 * *outward*. The border-peaked, monotonic envelope is deliberate -
 	 * displacement peaks in the middle of the bezel overlap the corner
 	 * arcs, where the inward normal rotates through 90° and shears the
 	 * backdrop into diagonal creases.
@@ -123,7 +123,7 @@ export function computeLUT(o: LiquidGlassResolvedOptions, bezel: number, thickne
 		const t = i / (N - 1);
 		const fp = S.fp(t);
 		// Ray path through the glass: full thickness at the border (t = 0),
-		// decaying to zero at the bezel end (t = 1) — this makes refraction
+		// decaying to zero at the bezel end (t = 1) - this makes refraction
 		// reach the element edge, matching the reference implementation.
 		const hPx = (1 - S.f(t)) * thickness;
 		const s = clamp(fp * (thickness / bezel), -1e3, 1e3); // slope in px/px

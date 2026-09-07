@@ -21,7 +21,7 @@ function parseRadiusToken(tok: string, full: number): number {
  *    (rx against width, ry against height);
  *  - elliptical corners are reported as "Rx Ry" or "Rx / Ry";
  *  - when adjacent radii overflow a side, the CSS paint scales all radii
- *    uniformly — computed style reports the unscaled values, so the same
+ *    uniformly - computed style reports the unscaled values, so the same
  *    scaling is mirrored here.
  */
 export function resolveRadii(el: Element, W: number, H: number): CornerRadii {
@@ -109,7 +109,7 @@ export function sanitizeFilterId(raw: string | number | null | undefined): strin
 /**
  * Largest baked tile dimension for a geometry: the biggest corner extent
  * (radius + bezel) in px. Tiles are the only size-scaled bitmaps left,
- * so this — not the element's width/height — is what bake cost follows.
+ * so this - not the element's width/height - is what bake cost follows.
  */
 export function tileExtent(radii: CornerRadii, bezel: number): number {
 	let m = 0;
@@ -120,20 +120,20 @@ export function tileExtent(radii: CornerRadii, bezel: number): number {
 }
 
 /**
- * Resolve the effective bake resolution multiplier — the quality knob.
+ * Resolve the effective bake resolution multiplier - the quality knob.
  *
  * `'auto'` scales with **how large the element renders** (geometric mean
- * of its w×h): tiny chips read clean at 0.75× — at that size the
- * softness is imperceptible and the bake is nearly free — while large
+ * of its w×h): tiny chips read clean at 0.75× - at that size the
+ * softness is imperceptible and the bake is nearly free - while large
  * surfaces climb to 2×, where the effect covers enough screen area for
  * detail to matter. Element size, not devicePixelRatio, drives this:
  * DPR varies wildly across devices while the perceived difference
  * between 1× and 2× on a small phone screen is negligible, making
- * density a misleading — and costly — quality signal.
+ * density a misleading - and costly - quality signal.
  *
  * The tiers sit exactly on the display grid (0.75×, 1×, 1.5×, 2×). An
  * earlier experiment offset them 5% off-grid so the display's bilinear
- * resampling would decorrelate residual dither grain — but the constant
+ * resampling would decorrelate residual dither grain - but the constant
  * misalignment itself read as shimmer/glitches on the displaced content,
  * so grid-aligned tiers won.
  *
@@ -158,7 +158,7 @@ export function resolveRenderScale(
 }
 
 /**
- * Signature of everything that changes the *bake* (tiles) — used to
+ * Signature of everything that changes the *bake* (tiles) - used to
  * decide whether an element may attach to an existing shared filter or
  * reuse cached tiles. Resolved bezel/thickness and the resolved render
  * scale are included so two same-size elements with different explicit

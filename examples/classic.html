@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Liquid Glass — SVG refraction for any element</title>
+		<title>Liquid Glass - SVG refraction for any element</title>
 		<style>
 			:root {
 				--violet: #7c5cff;
@@ -287,75 +287,6 @@
 				font-weight: 600;
 			}
 
-			/* ---- music chip ---- */
-			.chip {
-				left: 26px;
-				bottom: 26px;
-				border-radius: 22px;
-				display: flex;
-				align-items: center;
-				gap: 14px;
-				padding: 14px 20px 14px 14px;
-			}
-			.album {
-				width: 46px;
-				height: 46px;
-				border-radius: 14px;
-				flex: none;
-				background: conic-gradient(from 210deg, var(--violet), var(--magenta), var(--cyan), var(--violet));
-				box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-			}
-			.chip .meta {
-				line-height: 1.3;
-			}
-			.chip .meta b {
-				display: block;
-				font-size: 13px;
-			}
-			.chip .meta span {
-				font-size: 11px;
-				color: rgba(255, 255, 255, 0.6);
-			}
-			.eq {
-				display: flex;
-				align-items: flex-end;
-				gap: 3px;
-				height: 20px;
-				margin-left: 6px;
-			}
-			.eq b {
-				width: 3px;
-				border-radius: 2px;
-				background: rgba(255, 255, 255, 0.85);
-				animation: bounce 1s ease-in-out infinite;
-				transform-origin: bottom;
-			}
-			.eq b:nth-child(1) {
-				height: 40%;
-				animation-delay: -0.1s;
-			}
-			.eq b:nth-child(2) {
-				height: 90%;
-				animation-delay: -0.5s;
-			}
-			.eq b:nth-child(3) {
-				height: 60%;
-				animation-delay: -0.3s;
-			}
-			.eq b:nth-child(4) {
-				height: 100%;
-				animation-delay: -0.8s;
-			}
-			.eq b:nth-child(5) {
-				height: 50%;
-				animation-delay: -0.2s;
-			}
-			@keyframes bounce {
-				50% {
-					transform: scaleY(0.35);
-				}
-			}
-
 			/* ---- fab ---- */
 			.fab {
 				right: 26px;
@@ -400,7 +331,7 @@
 				pointer-events: none;
 			}
 
-			/* ---- hover-grow pill (animated width — the 9-slice use case) ---- */
+			/* ---- hover-grow pill (animated width - the 9-slice use case) ---- */
 			.grow {
 				right: 26px;
 				top: 42%;
@@ -645,27 +576,10 @@
 				display: grid;
 			}
 
-			.credit {
-				position: fixed;
-				bottom: 14px;
-				left: 50%;
-				transform: translateX(-50%);
-				font-size: 11px;
-				color: rgba(255, 255, 255, 0.45);
-				z-index: 5;
-				white-space: nowrap;
-			}
-			.credit a {
-				color: rgba(255, 255, 255, 0.7);
-			}
-
 			@media (max-width: 900px) {
 				.card {
 					left: 50%;
 					top: 46%;
-				}
-				.credit {
-					display: none;
 				}
 				.lens {
 					left: 8vw;
@@ -682,8 +596,7 @@
 			}
 			@media (prefers-reduced-motion: reduce) {
 				.blob,
-				.marquee span,
-				.eq b {
+				.marquee span {
 					animation: none !important;
 				}
 			}
@@ -729,7 +642,7 @@
 			<h1>Liquid Glass,<br />on any element.</h1>
 			<p>
 				Refraction is baked into a displacement map from a bezel profile and Snell's law, edged with a razor-thin rim of
-				hyper-saturated color — all applied through a single <code>backdrop-filter: url(#…)</code>.
+				hyper-saturated color - all applied through a single <code>backdrop-filter: url(#…)</code>.
 			</p>
 			<div class="row-actions">
 				<button class="btn solid">Get started</button>
@@ -739,22 +652,16 @@
 			</div>
 			<div class="hint">
 				<b>Drag the round lens</b> through the type. Hover the pill (right) and the square (left): 9-slice resizing is
-				pure re-positioning — no re-baking, every frame.
+				pure re-positioning - no re-baking, every frame.
 			</div>
 		</section>
-
-		<div class="glass chip" data-liquid-glass>
-			<div class="album"></div>
-			<div class="meta"><b>Chromatic Aberration</b><span>Refract &amp; Blur · Single</span></div>
-			<div class="eq"><b></b><b></b><b></b><b></b><b></b></div>
-		</div>
 
 		<button class="glass fab" data-liquid-glass aria-label="Add">+</button>
 
 		<div class="glass lens" id="lens" data-liquid-glass><span>drag me</span></div>
 
 		<button class="glass grow" id="grow" data-liquid-glass>
-			Hover to grow <span class="lbl-extra">— watch the refraction stretch</span> <span class="chev">→</span>
+			Hover to grow <span class="lbl-extra">- watch the refraction stretch</span> <span class="chev">→</span>
 		</button>
 
 		<button class="glass morph" id="morph" data-liquid-glass aria-label="Square that becomes a rectangle on hover">
@@ -833,21 +740,13 @@
 			<hr class="divider" />
 			<img id="mapPreview" alt="Generated displacement + specular map (debug view)" width="540" height="408" />
 			<div class="maplabel">
-				Card map — R/G channels encode X/Y displacement (128 = neutral), blue is the razor-thin rim line.
+				Card map - R/G channels encode X/Y displacement (128 = neutral), blue is the razor-thin rim line.
 			</div>
 			<div class="maplabel" id="scaleInfo"></div>
 			<div id="supportBadge"></div>
 		</aside>
 
-		<footer class="credit">
-			Technique:
-			<a href="https://kube.io/blog/liquid-glass-css-svg/" target="_blank" rel="noopener"
-				>kube.io — Liquid Glass in the Browser</a
-			>
-			· effect requires a Chromium browser
-		</footer>
-
-		<script src="dist/liquid-glass.js"></script>
+		<script src="../dist/liquid-glass.js"></script>
 		<script>
 			(function () {
 				'use strict';
@@ -856,7 +755,6 @@
 				var els = {
 					dock: document.querySelector('.dock'),
 					card: document.getElementById('card'),
-					chip: document.querySelector('.chip'),
 					fab: document.querySelector('.fab'),
 					lens: document.getElementById('lens'),
 					grow: document.getElementById('grow'),
@@ -960,7 +858,7 @@
 					badge.textContent = 'SVG backdrop-filter: supported ✓';
 					badge.className = 'ok';
 				} else {
-					badge.textContent = 'SVG backdrop-filter unsupported here — blur fallback active';
+					badge.textContent = 'SVG backdrop-filter unsupported here - blur fallback active';
 					badge.className = 'no';
 				}
 
@@ -973,7 +871,7 @@
 					toggle.textContent = collapsed ? '⚙' : '✕';
 				});
 
-				/* ---------- draggable lens (no map regen needed — only size matters) ---------- */
+				/* ---------- draggable lens (no map regen needed - only size matters) ---------- */
 				var lens = els.lens;
 				var drag = null;
 				lens.addEventListener('pointerdown', function (e) {

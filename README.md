@@ -1,22 +1,23 @@
 # LiquidGlass
 
-Apple-style **"Liquid Glass"** refraction for any DOM element — SVG displacement-map
+Apple-style **"Liquid Glass"** refraction for any DOM element - SVG displacement-map
 `backdrop-filter`, ported from the technique described in
-[kube.io — Liquid Glass in the Browser](https://kube.io/blog/liquid-glass-css-svg/).
+[kube.io - Liquid Glass in the Browser](https://kube.io/blog/liquid-glass-css-svg/).
 
 - Zero runtime dependencies, ~24 kB minified, TypeScript with full type declarations.
 - Optional React hook at `liquid-glass/react` (React 18+ peer).
 - Works from `file://` (no build step needed on the consuming page).
-- Chromium only (SVG filters as `backdrop-filter`); other browsers get a plain
+- Chromium only (SVG filters as `backdrop-filter`); unsupported browsers get a plain
   CSS blur/saturate fallback.
 
 ```html
 <div class="card">…</div>
+```
 
-<script type="module">
-	import {create} from 'https://unpkg.com/liquid-glass/dist/esm/index.js';
-	create(document.querySelector('.card'));
-</script>
+```ts
+import {create} from '@goran.alkovic/liquid-glass';
+
+create(document.querySelector('.card')!);
 ```
 
 ## How it works
@@ -40,25 +41,26 @@ share a single baked filter.
 ## Install
 
 ```sh
-bun add liquid-glass
+bun add @goran.alkovic/liquid-glass
 ```
 
 Bundlers (ESM / CJS):
 
 ```ts
-import {create} from 'liquid-glass';
+import {create} from '@goran.alkovic/liquid-glass';
 ```
 
-Classic script (global `LiquidGlass`):
+Classic script (global `LiquidGlass`) - the IIFE build ships inside the npm
+package:
 
 ```html
-<script src="https://unpkg.com/liquid-glass/dist/liquid-glass.min.js"></script>
+<script src="node_modules/@goran.alkovic/liquid-glass/dist/liquid-glass.min.js"></script>
 ```
 
 ## Usage
 
 ```ts
-import {create, applyAll} from 'liquid-glass';
+import {create, applyAll} from '@goran.alkovic/liquid-glass';
 
 // one element
 const glass = create(document.querySelector('.card'), {
@@ -81,10 +83,10 @@ glass.destroy();
 ### React
 
 A hook ships at the `liquid-glass/react` subpath (React 18+ as an _optional_
-peer dependency — non-React consumers never install it):
+peer dependency - non-React consumers never install it):
 
 ```tsx
-import {useLiquidGlass} from 'liquid-glass/react';
+import {useLiquidGlass} from '@goran.alkovic/liquid-glass/react';
 
 function Card({strong}: {strong: boolean}) {
 	const options = useMemo(() => ({thickness: strong ? 90 : 50}), [strong]);
@@ -94,7 +96,7 @@ function Card({strong}: {strong: boolean}) {
 ```
 
 The controller is created when the node mounts and destroyed on unmount
-(React 18 StrictMode-safe). Options flow through `setOptions` — memoize the
+(React 18 StrictMode-safe). Options flow through `setOptions` - memoize the
 options object, identity is what triggers updates. `on` subscribes to typed
 events even before the instance exists (subscriptions are queued and
 re-attached across node swaps).
@@ -110,7 +112,7 @@ el.addEventListener('lglass:relayout', (e) => {
 });
 ```
 
-Or subscribe type-safely on the instance — `on` returns an unsubscribe
+Or subscribe type-safely on the instance - `on` returns an unsubscribe
 function, and event names/details are checked against the (open, declaration-mergeable)
 `LiquidGlassEvents` map:
 
@@ -121,12 +123,12 @@ off();
 
 ### Custom surfaces
 
-`surface` accepts any registered profile name — register your own bezel
+`surface` accepts any registered profile name - register your own bezel
 cross-section with `registerSurface` (the profile name becomes part of the
 bake signature, so custom profiles never share cached tiles with built-ins):
 
 ```ts
-import {registerSurface, listSurfaces} from 'liquid-glass';
+import {registerSurface, listSurfaces} from '@goran.alkovic/liquid-glass';
 
 registerSurface('prism', {
 	f: (t) => 1 - (1 - t) * (1 - t), // thickness envelope, f(0)=0 → f(1)=1
@@ -140,7 +142,7 @@ listSurfaces(); // ['convex-squircle', 'convex-circle', 'concave', 'lip', 'prism
 
 ```ts
 create(a, {filterId: 'toolbar'});
-create(b, {filterId: 'toolbar'}); // attaches — no second bake
+create(b, {filterId: 'toolbar'}); // attaches - no second bake
 ```
 
 The group contract (size, corner radii, bake options) is validated; mismatching
@@ -150,13 +152,13 @@ elements fall back to a private filter with a console warning.
 
 | Option                | Default                      | Description                                                                                                    |
 | --------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `surface`             | `'convex-squircle'`          | Bezel profile: `convex-squircle`, `convex-circle`, `concave`, `lip` — or any name added via `registerSurface`. |
+| `surface`             | `'convex-squircle'`          | Bezel profile: `convex-squircle`, `convex-circle`, `concave`, `lip` - or any name added via `registerSurface`. |
 | `bezel`               | `'auto'`                     | Refracting edge width in px. `'auto'` = `min(48, min(w, h) / 2)`.                                              |
-| `thickness`           | `'auto'`                     | Virtual glass thickness in px — the main strength knob. `'auto'` = bezel.                                      |
+| `thickness`           | `'auto'`                     | Virtual glass thickness in px - the main strength knob. `'auto'` = bezel.                                      |
 | `ior`                 | `1.5`                        | Refractive index.                                                                                              |
 | `scale`               | `1`                          | Displacement multiplier. Cheap (no re-bake).                                                                   |
 | `saturate`            | `1`                          | Global saturation of the refracted backdrop. Cheap.                                                            |
-| `blur`                | `1`                          | Pre-displacement backdrop blur (px). Cheap.                                                                    |
+| `blur`                | `0.2`                        | Pre-displacement backdrop blur (px). Cheap.                                                                    |
 | `specular.angle`      | `65`                         | Light travel direction, degrees (0° = from left, 90° = from top).                                              |
 | `specular.saturation` | `6`                          | Saturation boost inside the rim line only. Cheap.                                                              |
 | `specular.opacity`    | `0.4`                        | Opacity of the gray glint line. Cheap.                                                                         |
@@ -165,22 +167,24 @@ elements fall back to a private filter with a console warning.
 | `filterId`            | `null`                       | Share one baked filter across identical elements.                                                              |
 | `renderScale`         | `'auto'`                     | Bake resolution multiplier (quality). `'auto'` scales with rendered size. Explicit numbers clamp to [0.5, 4].  |
 | `throttleMs`          | `120`                        | Throttle for re-bakes on geometry changes.                                                                     |
-| `fallback`            | `'blur(10px) saturate(1.5)'` | `backdrop-filter` value for non-Chromium browsers.                                                             |
+| `fallback`            | `'blur(10px) saturate(1.5)'` | `backdrop-filter` value for unsupported browsers.                                                              |
 | `debug`               | `false`                      | Also bake an inspectable debug map (`mapDebugDataUrl`).                                                        |
-| `static`              | `false`                      | Generate once for the creation geometry — no observers, no automatic updates (see below).                      |
+| `static`              | `false`                      | Generate once for the creation geometry - no observers, no automatic updates (see below).                      |
+| `supportedClass`      | `null`                       | Class added to the element when SVG `backdrop-filter` is supported.                                            |
+| `fallbackClass`       | `null`                       | Class added to the element when the CSS fallback is active (unsupported browser).                              |
 
 ### Static glass
 
 For elements whose size is known and fixed, `static: true` skips the observers
 entirely: the effect is generated once for the geometry at creation, and no
-automatic re-bakes or re-layouts ever run — zero ongoing work after setup.
+automatic re-bakes or re-layouts ever run - zero ongoing work after setup.
 
 ```ts
 create(document.querySelector('.badge'), {static: true});
 ```
 
 Cheap `setOptions` (scale, saturate, blur, specular opacity/saturation) still
-applies — handy for hover effects — and `refresh()` can be called manually
+applies - handy for hover effects - and `refresh()` can be called manually
 after a known layout change. If the element is hidden (zero size) at creation,
 call `refresh()` once it becomes visible. In a `filterId` group the owner's
 updates still propagate to static followers.
@@ -188,21 +192,21 @@ updates still propagate to static followers.
 ### Standalone map generation
 
 ```ts
-import {generateMaps, generateTiles} from 'liquid-glass';
+import {generateMaps, generateTiles} from '@goran.alkovic/liquid-glass';
 
 const maps = generateMaps({width: 420, height: 56, borderRadius: 28});
-// maps.mapDataUrl / maps.specularDataUrl — feed your own filter chain
+// maps.mapDataUrl / maps.specularDataUrl - feed your own filter chain
 
 const tiles = generateTiles({borderRadius: 28}); // 9-slice, size-independent
 ```
 
 ### Static filters
 
-Need just the SVG filter — no element controller, no observers? Generate one
+Need just the SVG filter - no element controller, no observers? Generate one
 for a border radius and reference it from CSS yourself:
 
 ```ts
-import {createFilter} from 'liquid-glass';
+import {createFilter} from '@goran.alkovic/liquid-glass';
 
 const f = createFilter({borderRadius: 28, width: 420, height: 56});
 el.style.backdropFilter = f.url; // Chromium: full refraction
@@ -219,10 +223,18 @@ share bakes. As `backdrop-filter` this is Chromium-only; as a regular
 ### Browser support
 
 ```ts
-import {isSupported} from 'liquid-glass';
+import {isSupported} from '@goran.alkovic/liquid-glass';
 if (!isSupported()) {
 	/* the CSS fallback is active */
 }
+```
+
+Or let the library tag your elements - `supportedClass` / `fallbackClass` are
+added/removed automatically (and swapped if detection changes), so you can
+branch your CSS on capability:
+
+```ts
+create(el, {supportedClass: 'glass-ok', fallbackClass: 'glass-fallback'});
 ```
 
 ## Development
@@ -236,7 +248,7 @@ bun run lint # oxlint
 bun run format # prettier
 ```
 
-Open `examples/` for the interactive React demo — served by Bun standalone
+Open `examples/` for the interactive React demo - served by Bun standalone
 (HTML imports + HMR, no bundler config):
 
 ```sh
@@ -247,7 +259,7 @@ bun run build # static production build → examples/dist
 ```
 
 `examples/src/Glass.tsx` is a small wrapper component built on the hook (create
-on mount, `setOptions` on prop changes, `destroy` on unmount) — copy it into
+on mount, `setOptions` on prop changes, `destroy` on unmount) - copy it into
 your app or adapt it. Note bun's watcher only covers the project directory it
 runs from: `bun run example` from the repo root watches both the app and the
 library source.
@@ -256,7 +268,7 @@ Source layout (`src/`): `types` (public types) · `options` · `surfaces` (the
 profile registry + `registerSurface`) · `sampler` · `bake` · `cache` ·
 `geometry` · `svg` · `filter` (the SVG `<filter>` node + slice layout) ·
 `static-filter` (`createFilter`) · `react` (the `useLiquidGlass` hook) ·
-`controller` (the `LiquidGlass` class) — everything below the controller is
+`controller` (the `LiquidGlass` class) - everything below the controller is
 pure (or canvas-only) and unit-testable in isolation.
 
 ## License

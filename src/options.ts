@@ -14,7 +14,7 @@ export const DEFAULT_OPTIONS: Readonly<LiquidGlassResolvedOptions> = {
 	ior: 1.5,
 	scale: 1,
 	saturate: 1,
-	blur: 1,
+	blur: 0.2,
 	specular: {angle: 65, saturation: 6, opacity: 0.4, width: 1.6, gray: 120},
 	filterId: null,
 	renderScale: 'auto',
@@ -22,6 +22,8 @@ export const DEFAULT_OPTIONS: Readonly<LiquidGlassResolvedOptions> = {
 	fallback: 'blur(10px) saturate(1.5)',
 	debug: false,
 	static: false,
+	supportedClass: null,
+	fallbackClass: null,
 };
 
 /**
@@ -47,6 +49,8 @@ export function resolveOptions(
 	if (patch.fallback !== undefined) out.fallback = patch.fallback;
 	if (patch.debug !== undefined) out.debug = patch.debug;
 	if (patch.static !== undefined) out.static = patch.static;
+	if (patch.supportedClass !== undefined) out.supportedClass = patch.supportedClass;
+	if (patch.fallbackClass !== undefined) out.fallbackClass = patch.fallbackClass;
 	if (patch.specular) out.specular = {...out.specular, ...patch.specular};
 	return out;
 }
