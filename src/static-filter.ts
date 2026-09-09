@@ -86,6 +86,8 @@ export function createFilter(params: CreateFilterParams): StaticFilter {
 	node.build(id, tiles, width, height, {
 		blur: o.blur,
 		scale: displacementScale(tiles.maxDisplacement, o.scale),
+		dispersion: o.dispersion,
+		smooth: o.smooth,
 		saturate: o.saturate,
 		rimSaturation: o.specular.saturation,
 		rimOpacity: o.specular.opacity,

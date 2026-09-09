@@ -17,16 +17,24 @@ import type {
 import {makeSampler, type SampleOut, type Sampler} from './sampler';
 import {computeLUT} from './surfaces';
 import {resolveBezel} from './options';
-import {resolveRenderScale, straightSpans, tileExtent} from './geometry';
+import {resolveRenderScale, straightSpans} from './geometry';
 
 /**
- * Ordered 4×4 Bayer offsets in [-0.5, 0.5), mean 0. Added to the
- * displacement channels before their 8-bit quantization.
+ * Dither amplitude in channel levels (±½ = full 8-bit swing).
  */
-const BAYER_DITHER: Float32Array = Float32Array.from(
-	[0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5],
-	(v) => (v + 0.5) / 16 - 0.5,
-);
+const DITHER_SCALE = 1;
+
+/**
+ * Interleaved gradient noise (Jimenez) - an analytic blue-noise-ish
+ * threshold field in [0, 1). Unlike a small Bayer tile it has no regular
+ * repeating structure, so at equal amplitude the dither reads as fine
+ * texture instead of a visible cross-hatch pattern.
+ */
+function ign(px: number, py: number): number {
+	const f = 0.06711056 * px + 0.00583715 * py;
+	const f1 = f - Math.floor(f); // fract
+	return 52.9829189 * f1 - Math.floor(52.9829189 * f1);
+}
 
 /** Bake output for one tile. */
 export interface BakedTile {
@@ -42,14 +50,14 @@ export interface BakedTile {
  * storage would destroy the R/G channels of transparent pixels); the
  * specular PNG is constant gray with intensity in alpha.
  *
- * The R/G channels are quantized to 8-bit WITH an ordered (Bayer)
- * dither: `feDisplacementMap` reads the channels as discrete levels, so
- * plain rounding turns the smooth displacement field into coherent
- * terraces that render as stair-stepped edges in the refracted content.
- * The dither trades those staircases for imperceptible per-pixel grain
- * - no blur involved, and it is resolution-independent (channel depth,
- * not spatial detail, is the limit). Neutral interior (128/128) is left
- * pristine so flat areas stay perfectly still.
+ * The R/G channels are quantized to 8-bit with a blue-noise dither
+ * (interleaved gradient noise): `feDisplacementMap` reads the channels as
+ * discrete levels, so plain rounding turns the smooth displacement field
+ * into coherent terraces that render as stair-stepped edges in the
+ * refracted content. The dither trades those staircases for fine
+ * uncorrelated texture - resolution-independent (channel depth, not
+ * spatial detail, is the limit). The exactly-neutral interior (128/128)
+ * is left untouched so flat areas stay perfectly still.
  *
  * @param ss Supersample factor: render at `res × ss` and
  *        area-downsample back to `res`. Cheap AA for low bake
@@ -95,12 +103,13 @@ export function bakeTile(
 	let p = 0;
 	for (let py = 0; py < ch; py++) {
 		const y = (py + 0.5) * step;
-		const bRow = (py & 3) << 2;
 		for (let px = 0; px < cw; px++, p += 4) {
 			sample((px + 0.5) * step, y, out);
 
-			// 8-bit quantization with ordered dither (see JSDoc above).
-			const d = out[0] === 128 && out[1] === 128 ? 0 : BAYER_DITHER[bRow | (px & 3)];
+			// 8-bit quantization, dithered with blue noise (see JSDoc
+			// above). The exactly-neutral interior is skipped so flat areas
+			// stay perfectly still.
+			const d = out[0] === 128 && out[1] === 128 ? 0 : (ign(px, py) - 0.5) * DITHER_SCALE;
 			mapImg.data[p] = out[0] + d;
 			mapImg.data[p + 1] = out[1] + d;
 			mapImg.data[p + 2] = 128;
@@ -148,18 +157,6 @@ export function bakeTile(
 		if (dbgOut && dbgCanvas) dbgOut = shrink(dbgCanvas);
 	}
 
-	// Sub-pixel smoothing of the quantized + dithered field (0.5 CSS px,
-	// scaled with the bake resolution). Combined with the dither this
-	// raises the map's *effective* channel precision - the low-pass pulls
-	// the ±½-level grain back toward the true field values - and gently
-	// relaxes the steepest displacement gradients. The rendered content is
-	// displaced BY this field, not blended with it, so nothing visible
-	// gets blurred; the interior stays exactly neutral (128 → 128).
-	const mctx = mapOut.getContext('2d') as CanvasRenderingContext2D;
-	mctx.filter = 'blur(' + (0.5 * res).toFixed(2) + 'px)';
-	mctx.drawImage(mapOut, 0, 0);
-	mctx.filter = 'none';
-
 	return {
 		mapDataUrl: mapOut.toDataURL('image/png'),
 		specularDataUrl: specOut.toDataURL('image/png'),
@@ -184,7 +181,7 @@ export interface MapsParams {
 export function renderMaps({width: W, height: H, radii, options: o}: MapsParams): LiquidGlassMaps {
 	const {bezel, thickness} = resolveBezel(o, W, H);
 	const lut = computeLUT(o, bezel, thickness);
-	const res = resolveRenderScale(o, W, H);
+	const res = resolveRenderScale(o);
 	const rimGray = clamp(Math.round(o.specular.gray || 120), 0, 255);
 	// Supersample low bake resolutions (render above the target grid, then
 	// area-downsample) - near-free AA where samples are sparse (the JS
@@ -237,7 +234,7 @@ type CornerMapFn = (x: number, y: number, vw: number, vh: number, tw: number, th
 export function renderTiles({radii, options: o, width: W, height: H}: TilesParams): LiquidGlassTiles {
 	const {bezel, thickness} = resolveBezel(o, W, H);
 	const lut = computeLUT(o, bezel, thickness);
-	const res = resolveRenderScale(o, W, H, tileExtent(radii, bezel));
+	const res = resolveRenderScale(o);
 	const rimGray = clamp(Math.round(o.specular.gray || 120), 0, 255);
 	// Supersample low bake resolutions (render above the target grid, then
 	// area-downsample) - near-free AA where samples are sparse (the JS

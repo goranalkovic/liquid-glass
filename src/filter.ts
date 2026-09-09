@@ -21,8 +21,21 @@ export interface GlassFilterOptions {
 	blur: number;
 	/** feDisplacementMap scale (encoded ±1 range → true px). */
 	scale: number;
+	/**
+	 * Chromatic dispersion, 0–0.5: red displaced slightly less, blue
+	 * slightly more, than green (three passes summed channel-wise).
+	 * 0 = single pass.
+	 */
+	dispersion: number;
 	/** Global saturation of the refracted backdrop (1 = skip). */
 	saturate: number;
+	/**
+	 * Post-displacement micro-smoothing in px (0 disables). The only
+	 * filter that smooths the *rendered* refraction - it removes residual
+	 * grain/shimmer in the compressed rim band at the cost of a touch of
+	 * refracted detail. Keep it small (≤ ~0.5px).
+	 */
+	smooth: number;
 	/** Saturation boost inside the rim line only. */
 	rimSaturation: number;
 	/** Opacity of the gray glint line (0–1). */
@@ -172,29 +185,90 @@ export class GlassFilterNode {
 			);
 		}
 
-		// Slight pre-displacement blur of the backdrop (default: 0.2).
+		// Optional pre-displacement blur of the backdrop (0 disables).
 		let source = 'SourceGraphic';
 		if (o.blur > 0) {
 			mk('feGaussianBlur', {in: 'SourceGraphic', stdDeviation: o.blur, result: 'lg_blur'});
 			source = 'lg_blur';
 		}
 
-		// Refraction.
-		mk('feDisplacementMap', {
-			in: source,
-			in2: 'lg_map',
-			scale: o.scale,
-			xChannelSelector: 'R',
-			yChannelSelector: 'G',
-			result: 'lg_refract',
-		});
+		// Refraction - with optional chromatic dispersion: red is displaced
+		// slightly less and blue slightly more than green, and the three
+		// passes are summed channel-wise via feComposite arithmetic. Alpha
+		// is summed along with them (SVG primitives work premultiplied), so
+		// see-through backdrops clamp toward opaque and darken slightly -
+		// one more reason dispersion defaults to 0.
+		if (o.dispersion > 1e-3) {
+			const d = clamp(o.dispersion, 0, 0.5);
+			// Keep one channel (+ alpha) per pass. Summing triples alpha,
+			// which saturates to 1 for anything but very translucent sources.
+			const keep = {
+				R: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0',
+				G: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0',
+				B: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0',
+			};
+			const chan = (name: 'R' | 'G' | 'B', scale: number): string => {
+				mk('feDisplacementMap', {
+					in: source,
+					in2: 'lg_map',
+					scale: scale.toFixed(2),
+					xChannelSelector: 'R',
+					yChannelSelector: 'G',
+					result: 'lg_d' + name,
+				});
+				mk('feColorMatrix', {in: 'lg_d' + name, type: 'matrix', values: keep[name], result: 'lg_c' + name});
+				return 'lg_c' + name;
+			};
+			mk('feComposite', {
+				in: chan('G', o.scale),
+				in2: chan('R', o.scale * (1 - d)),
+				operator: 'arithmetic',
+				k1: 0,
+				k2: 1,
+				k3: 1,
+				k4: 0,
+				result: 'lg_disp_rg',
+			});
+			mk('feComposite', {
+				in: 'lg_disp_rg',
+				in2: chan('B', o.scale * (1 + d)),
+				operator: 'arithmetic',
+				k1: 0,
+				k2: 1,
+				k3: 1,
+				k4: 0,
+				result: 'lg_refract',
+			});
+		} else {
+			mk('feDisplacementMap', {
+				in: source,
+				in2: 'lg_map',
+				scale: o.scale,
+				xChannelSelector: 'R',
+				yChannelSelector: 'G',
+				result: 'lg_refract',
+			});
+		}
+
+		// Optional post-displacement micro-smoothing (see GlassFilterOptions
+		// `.smooth`) - applied to the refracted result BEFORE the rim paths
+		// so the rim masking keeps working off the same names.
+		let refracted = 'lg_refract';
+		if (o.smooth > 1e-3) {
+			mk('feGaussianBlur', {
+				in: refracted,
+				stdDeviation: clamp(o.smooth, 0, 8),
+				result: 'lg_refract_smooth',
+			});
+			refracted = 'lg_refract_smooth';
+		}
 
 		// Optional global saturation of the refracted backdrop.
-		let base = 'lg_refract';
+		let base = refracted;
 		const g = o.saturate;
 		if (isFinite(g) && Math.abs(g - 1) > 1e-3) {
 			mk('feColorMatrix', {
-				in: 'lg_refract',
+				in: refracted,
 				type: 'saturate',
 				values: String(clamp(g, 0, 4)),
 				result: 'lg_gsat',

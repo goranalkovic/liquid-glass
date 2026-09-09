@@ -114,11 +114,28 @@ export interface LiquidGlassOptions {
 	 */
 	saturate?: number;
 	/**
-	 * Backdrop blur in px applied *before* displacement (a whisper of blur
-	 * - default 0.2 - keeps sub-pixel sampling smooth without visibly
-	 * softening the backdrop). Cheap.
+	 * Backdrop blur in px applied *before* displacement (default 0 - the
+	 * two-pass displacement keeps the map precise without it). A small
+	 * value keeps sub-pixel sampling smooth on noisy backdrops. Cheap.
 	 */
 	blur?: number;
+	/**
+	 * Chromatic dispersion (chromatic aberration) of the refracted
+	 * backdrop, 0–0.5: red is displaced slightly less and blue slightly
+	 * more than green (three displacement passes summed channel-wise).
+	 * 0 = single pass (default, cheapest). Caveat: the three passes sum
+	 * alpha as well, so see-through backdrops can darken slightly - keep
+	 * the value small over transparent content. Cheap.
+	 */
+	dispersion?: number;
+	/**
+	 * Post-displacement micro-smoothing in px (default 0.15). The only
+	 * knob that smooths the *rendered* refraction: a tiny blur after
+	 * `feDisplacementMap` removes the residual grain/shimmer of the
+	 * compressed rim band at the cost of a touch of refracted detail.
+	 * Keep it small (≤ ~0.5px). Cheap.
+	 */
+	smooth?: number;
 	/** Rim-light configuration. */
 	specular?: LiquidGlassSpecularOptions;
 	/**
@@ -139,18 +156,38 @@ export interface LiquidGlassOptions {
 	filterId?: string | null;
 	/**
 	 * Bake quality - the resolution multiplier for the tile bitmaps.
-	 * `'auto'` scales with how large the element renders (geometric mean
-	 * of w×h): ≤150px bakes at 0.75×, ≤300px at 1×, ≤450px at 1.5×,
-	 * larger at 2× - softness is imperceptible at small sizes and the
-	 * bake is nearly free. Tiers are grid-aligned multipliers; off-grid
-	 * values (e.g. an early 5% offset experiment) caused visible
-	 * resampling glitches. Bake cost is capped by tile size. Explicit
-	 * numbers are the override and clamp to [0.5, 4]. Higher = sharper
-	 * thin rim, ~quadratically more bake time and memory.
+	 * `'auto'` bakes every element at 2× - uniform quality regardless of
+	 * size, so small shapes get the same rim definition as large ones.
+	 * Bake cost stays bounded: tiles are the only size-scaled bitmaps,
+	 * they are cached per shape, and very small tiles may exceed the 2×
+	 * default cap. Explicit numbers are the override and clamp to
+	 * [0.5, 4]. Below 2×, bakes are supersampled (ss = 4 / 2) and the
+	 * downsample averages the quantization dither into sub-level
+	 * precision, which keeps them stair-free. Higher = sharper thin rim,
+	 * ~quadratically more bake time and memory.
 	 */
 	renderScale?: number | 'auto';
 	/** Throttle (ms) for regeneration on resize / radius changes. */
 	throttleMs?: number;
+	/**
+	 * Settle mode in ms (0 = off). While the geometry churns (border-radius
+	 * or shape changes), the element immediately shows the plain CSS
+	 * `fallback` and the re-bake is debounced until the geometry has been
+	 * quiet for this long - instead of re-baking on every throttle tick.
+	 * Useful for morphs into shapes that have never been baked.
+	 */
+	settle?: number;
+	/**
+	 * Displacement decay bound in px/px of bezel depth (default `1`). The
+	 * rim pull is capped so the sampled source position always moves
+	 * forward monotonically - above ~1 px/px the map folds (samples
+	 * backwards) and the 8-bit encoding renders the fold band as mirrored,
+	 * jagged chaos. `1` is the exact no-fold threshold; lower values give
+	 * a proportionally softer, cleaner rim; `0` restores the uncapped
+	 * reference profile (strong pull, steep-rim artifacts on thick glass).
+	 * Affects the bake.
+	 */
+	maxDecay?: number;
 	/** `backdrop-filter` value for browsers without SVG-filter support. */
 	fallback?: string;
 	/**
@@ -160,19 +197,21 @@ export interface LiquidGlassOptions {
 	 */
 	debug?: boolean;
 	/**
-	 * Class added to the element when SVG `backdrop-filter` is supported
-	 * (the real refraction is active). Removed on
-	 * {@link LiquidGlass.destroy} and swapped automatically if capability
-	 * detection changes. Pair with `fallbackClass` to branch your CSS on
-	 * capability without calling {@link isSupported} yourself.
+	 * Class(es) added to the element when SVG `backdrop-filter` is supported
+	 * (the real refraction is active): a single class, a space-separated
+	 * string, or an array. Removed on {@link LiquidGlass.destroy} and
+	 * swapped automatically if capability detection changes. Pair with
+	 * `fallbackClass` to branch your CSS on capability without calling
+	 * {@link isSupported} yourself.
 	 */
-	supportedClass?: string | null;
+	supportedClass?: string | string[] | null;
 	/**
-	 * Class added to the element when the browser does NOT support SVG
-	 * `backdrop-filter` (the CSS `fallback` styling is active). Removed on
+	 * Class(es) added to the element when the browser does NOT support SVG
+	 * `backdrop-filter` (the CSS `fallback` styling is active): a single
+	 * class, a space-separated string, or an array. Removed on
 	 * {@link LiquidGlass.destroy}. Pair with `supportedClass`.
 	 */
-	fallbackClass?: string | null;
+	fallbackClass?: string | string[] | null;
 	/**
 	 * Generate the effect once for the geometry at creation and never
 	 * update it automatically: no resize/radius observers, no late
@@ -205,10 +244,14 @@ export interface LiquidGlassResolvedOptions {
 	scale: number;
 	saturate: number;
 	blur: number;
+	dispersion: number;
+	smooth: number;
 	specular: LiquidGlassResolvedSpecular;
 	filterId: string | null;
 	renderScale: number | 'auto';
 	throttleMs: number;
+	settle: number;
+	maxDecay: number;
 	fallback: string;
 	debug: boolean;
 	static: boolean;

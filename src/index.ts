@@ -37,9 +37,12 @@
  * single bake and one `<filter>` node serve any number of identical
  * elements (each still refracts its own backdrop).
  *
- * Browser support: SVG filters referenced from `backdrop-filter` currently
- * work only in Chromium. Unsupported browsers get a plain CSS `backdrop-filter`
- * fallback. Everything runs from `file://`; no dependencies.
+ * Browser support: SVG filters referenced from `backdrop-filter` render
+ * in Chromium today. WebKit has a reference-filter implementation in
+ * review (bugs.webkit.org/show_bug.cgi?id=245510) - detection is
+ * version-gated for it, and `forceSupported(true)` overrides the verdict
+ * manually. Everything else gets a plain CSS `backdrop-filter` fallback.
+ * Everything runs from `file://`; no dependencies.
  *
  * Source layout: `types` (public types) · `options` · `surfaces` ·
  * `sampler` · `bake` · `cache` · `geometry` · `svg` · `filter` ·
@@ -61,6 +64,8 @@ import {DEFAULT_OPTIONS, resolveOptions} from './options';
 import {renderMaps, renderTiles} from './bake';
 import {checkSvgBackdropSupport} from './support';
 import {LiquidGlass} from './controller';
+
+export {checkSvgBackdropSupport, forceSupported} from './support';
 
 export * from './types';
 export {LiquidGlass} from './controller';
@@ -129,4 +134,4 @@ export function isSupported(): boolean {
 }
 
 /** Library version. */
-export const version = '1.0.0';
+export const version = '1.1.0';

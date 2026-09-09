@@ -4,7 +4,7 @@ Apple-style **"Liquid Glass"** refraction for any DOM element - SVG displacement
 `backdrop-filter`, ported from the technique described in
 [kube.io - Liquid Glass in the Browser](https://kube.io/blog/liquid-glass-css-svg/).
 
-- Zero runtime dependencies, ~24 kB minified, TypeScript with full type declarations.
+- Zero runtime dependencies, ~26 kB minified, TypeScript with full type declarations.
 - Optional React hook at `liquid-glass/react` (React 18+ peer).
 - Works from `file://` (no build step needed on the consuming page).
 - Chromium only (SVG filters as `backdrop-filter`); unsupported browsers get a plain
@@ -27,7 +27,8 @@ create(document.querySelector('.card')!);
 2. Snell–Descartes law converts local surface slope + thickness into a pixel
    displacement magnitude (pre-computed 128-step LUT).
 3. The displacement vector field is baked into an **opaque** PNG
-   (R = X, G = Y, 128 = neutral).
+   (R = X, G = Y, 128 = neutral), slope-bounded (`maxDecay`) so the rim pull
+   never reverses - the field cannot fold or mirror the backdrop.
 4. The specular rim is a razor-thin (~1.6 px) one-sided line baked into a separate
    PNG; inside the SVG filter it masks a hyper-saturated copy of the refracted
    backdrop, topped by a faint gray glint.
@@ -150,28 +151,32 @@ elements fall back to a private filter with a console warning.
 
 ## Options
 
-| Option                | Default                      | Description                                                                                                    |
-| --------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `surface`             | `'convex-squircle'`          | Bezel profile: `convex-squircle`, `convex-circle`, `concave`, `lip` - or any name added via `registerSurface`. |
-| `bezel`               | `'auto'`                     | Refracting edge width in px. `'auto'` = `min(48, min(w, h) / 2)`.                                              |
-| `thickness`           | `'auto'`                     | Virtual glass thickness in px - the main strength knob. `'auto'` = bezel.                                      |
-| `ior`                 | `1.5`                        | Refractive index.                                                                                              |
-| `scale`               | `1`                          | Displacement multiplier. Cheap (no re-bake).                                                                   |
-| `saturate`            | `1`                          | Global saturation of the refracted backdrop. Cheap.                                                            |
-| `blur`                | `0.2`                        | Pre-displacement backdrop blur (px). Cheap.                                                                    |
-| `specular.angle`      | `65`                         | Light travel direction, degrees (0° = from left, 90° = from top).                                              |
-| `specular.saturation` | `6`                          | Saturation boost inside the rim line only. Cheap.                                                              |
-| `specular.opacity`    | `0.4`                        | Opacity of the gray glint line. Cheap.                                                                         |
-| `specular.width`      | `1.6`                        | Rim line width (px).                                                                                           |
-| `specular.gray`       | `120`                        | Gray level of the glint color.                                                                                 |
-| `filterId`            | `null`                       | Share one baked filter across identical elements.                                                              |
-| `renderScale`         | `'auto'`                     | Bake resolution multiplier (quality). `'auto'` scales with rendered size. Explicit numbers clamp to [0.5, 4].  |
-| `throttleMs`          | `120`                        | Throttle for re-bakes on geometry changes.                                                                     |
-| `fallback`            | `'blur(10px) saturate(1.5)'` | `backdrop-filter` value for unsupported browsers.                                                              |
-| `debug`               | `false`                      | Also bake an inspectable debug map (`mapDebugDataUrl`).                                                        |
-| `static`              | `false`                      | Generate once for the creation geometry - no observers, no automatic updates (see below).                      |
-| `supportedClass`      | `null`                       | Class added to the element when SVG `backdrop-filter` is supported.                                            |
-| `fallbackClass`       | `null`                       | Class added to the element when the CSS fallback is active (unsupported browser).                              |
+| Option                | Default                      | Description                                                                                                                        |
+| --------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `surface`             | `'convex-squircle'`          | Bezel profile: `convex-squircle`, `convex-circle`, `concave`, `lip` - or any name added via `registerSurface`.                     |
+| `bezel`               | `'auto'`                     | Refracting edge width in px. `'auto'` = `min(48, min(w, h) / 2)`.                                                                  |
+| `thickness`           | `'auto'`                     | Virtual glass thickness in px - the main strength knob. `'auto'` = bezel.                                                          |
+| `ior`                 | `1.5`                        | Refractive index.                                                                                                                  |
+| `scale`               | `1`                          | Displacement multiplier. Cheap (no re-bake).                                                                                       |
+| `saturate`            | `1`                          | Global saturation of the refracted backdrop. Cheap.                                                                                |
+| `blur`                | `0`                          | Pre-displacement backdrop blur (px). Cheap.                                                                                        |
+| `smooth`              | `0.15`                       | Post-displacement micro-blur (px) - smooths rendered refraction grain. Keep ≤ ~0.5. Cheap.                                         |
+| `dispersion`          | `0`                          | Chromatic aberration, 0–0.5 - red/blue displaced slightly off green (three passes). Cheap.                                         |
+| `settle`              | `0`                          | ms. While geometry churns, show the `fallback` and debounce the re-bake until quiet this long.                                     |
+| `maxDecay`            | `1`                          | Displacement decay bound (px/px). `1` = fold-free rim by design; `0` = uncapped reference look. Affects the bake.                  |
+| `specular.angle`      | `65`                         | Light travel direction, degrees (0° = from left, 90° = from top).                                                                  |
+| `specular.saturation` | `6`                          | Saturation boost inside the rim line only. Cheap.                                                                                  |
+| `specular.opacity`    | `0.4`                        | Opacity of the gray glint line. Cheap.                                                                                             |
+| `specular.width`      | `1.6`                        | Rim line width (px).                                                                                                               |
+| `specular.gray`       | `120`                        | Gray level of the glint color.                                                                                                     |
+| `filterId`            | `null`                       | Share one baked filter across identical elements.                                                                                  |
+| `renderScale`         | `'auto'`                     | Bake resolution multiplier (quality). `'auto'` = 1.25× for every element, always supersampled. Explicit numbers clamp to [0.5, 4]. |
+| `throttleMs`          | `120`                        | Throttle for re-bakes on geometry changes.                                                                                         |
+| `fallback`            | `'blur(10px) saturate(1.5)'` | `backdrop-filter` value for unsupported browsers.                                                                                  |
+| `debug`               | `false`                      | Also bake an inspectable debug map (`mapDebugDataUrl`).                                                                            |
+| `static`              | `false`                      | Generate once for the creation geometry - no observers, no automatic updates (see below).                                          |
+| `supportedClass`      | `null`                       | Class(es) added when SVG `backdrop-filter` is supported - string or array.                                                         |
+| `fallbackClass`       | `null`                       | Class(es) added when the CSS fallback is active - string or array.                                                                 |
 
 ### Static glass
 
@@ -234,8 +239,29 @@ added/removed automatically (and swapped if detection changes), so you can
 branch your CSS on capability:
 
 ```ts
-create(el, {supportedClass: 'glass-ok', fallbackClass: 'glass-fallback'});
+create(el, {supportedClass: 'glass-ok glass-ready', fallbackClass: ['glass-fallback', 'no-refraction']});
 ```
+
+### Safari (in progress)
+
+WebKit has an implementation of `backdrop-filter: url()` reference filters in
+review ([bug 245510](https://bugs.webkit.org/show_bug.cgi?id=245510), PRs
+68613/68614/69566). Detection is version-gated for it, so the library stays on
+the CSS fallback until the shipping Safari version is confirmed. To test a
+Technology Preview that carries the work today:
+
+```ts
+import {forceSupported} from '@goran.alkovic/liquid-glass';
+forceSupported(true); // false disables, null returns to sniffing
+```
+
+### Firefox
+
+Firefox's WebRender silently drops `backdrop-filter` when it would need an SVG
+filter graph ([bug 1961378](https://bugzilla.mozilla.org/show_bug.cgi?id=1961378)),
+so those browsers get the CSS `fallback`. (An interoperable spec solution - a
+`BackdropGraphic` filter input - is being discussed in
+[svgwg#1142](https://github.com/w3c/svgwg/issues/1142).)
 
 ## Development
 

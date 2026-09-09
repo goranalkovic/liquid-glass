@@ -6,7 +6,7 @@
 
 import type {CornerRadii, LiquidGlassResolvedOptions, LiquidGlassTiles} from './types';
 import {resolveBezel, resolveOptions} from './options';
-import {bakeSignature, resolveRenderScale, tileExtent, tileKey} from './geometry';
+import {bakeSignature, resolveRenderScale, tileKey} from './geometry';
 import {renderTiles} from './bake';
 
 /**
@@ -30,7 +30,7 @@ const TILE_CACHE_MAX = 24;
  */
 export function getTiles(radii: CornerRadii, o: LiquidGlassResolvedOptions, W: number, H: number): LiquidGlassTiles {
 	const {bezel, thickness} = resolveBezel(o, W, H);
-	const res = resolveRenderScale(o, W, H, tileExtent(radii, bezel));
+	const res = resolveRenderScale(o);
 	const key = tileKey(radii, W, H, bezel) + '|' + bakeSignature(o, bezel, thickness, res);
 	let tiles = tileCache.get(key);
 	if (!tiles) {

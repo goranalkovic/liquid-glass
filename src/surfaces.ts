@@ -137,6 +137,14 @@ export function computeLUT(o: LiquidGlassResolvedOptions, bezel: number, thickne
 		disp[i] = ry < -1e-6 ? (rx * hPx) / -ry : 0;
 		slope[i] = s;
 	}
+	// Anti-fold cap (`maxDecay`, default 1): the sampled source depth
+	// (t·bezel + disp) must move monotonically toward the border, or the
+	// map folds and the rim mirrors the backdrop. 0 = uncapped - the
+	// reference look relies on a steep (folding) rim.
+	if (isFinite(o.maxDecay) && o.maxDecay > 0) {
+		const step = (o.maxDecay * bezel) / (N - 1);
+		for (let i = N - 2; i >= 0; i--) disp[i] = Math.min(disp[i], disp[i + 1] + step);
+	}
 	let maxAbs = 0;
 	for (let i = 0; i < N; i++) maxAbs = Math.max(maxAbs, Math.abs(disp[i]));
 	return {N, bezel, disp, slope, maxAbs: Math.max(maxAbs, 1e-4)};

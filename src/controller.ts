@@ -15,15 +15,7 @@ import type {
 	LiquidGlassTiles,
 } from './types';
 import {DEFAULT_OPTIONS, resolveBezel, resolveOptions} from './options';
-import {
-	bakeSignature,
-	radiusKey,
-	resolveRadii,
-	resolveRenderScale,
-	sanitizeFilterId,
-	tileExtent,
-	tileKey,
-} from './geometry';
+import {bakeSignature, radiusKey, resolveRadii, resolveRenderScale, sanitizeFilterId, tileKey} from './geometry';
 import {getTiles} from './cache';
 import {renderMaps} from './bake';
 import {displacementScale, GlassFilterNode} from './filter';
@@ -105,6 +97,8 @@ export class LiquidGlass {
 	private _supportClassApplied: string | null = null;
 	private _prevBackdrop: string;
 	private _schedule: () => void;
+	/** Pending settle-mode re-bake timer (`settle` option), or null. */
+	private _settleTimer: ReturnType<typeof setTimeout> | null = null;
 
 	/**
 	 * @param el Target element (any shape; corner radii are
@@ -209,7 +203,7 @@ export class LiquidGlass {
 		 * different geometry/options → bake privately and warn (never
 		 * hijack a group other elements depend on). ---------------------- */
 		const wantShared = sanitizeFilterId(this.options.filterId);
-		const res = resolveRenderScale(this.options, W, H, tileExtent(radii, bezel));
+		const res = resolveRenderScale(this.options);
 		const sig = bakeSignature(this.options, bezel, thickness, res);
 		let sharedId: string | null = null;
 		if (wantShared) {
@@ -328,7 +322,7 @@ export class LiquidGlass {
 	 * @returns this (chainable)
 	 */
 	setOptions(patch?: LiquidGlassOptions): this {
-		const cheap = new Set<string>(['scale', 'saturate', 'blur', 'supportedClass', 'fallbackClass']);
+		const cheap = new Set<string>(['scale', 'saturate', 'blur', 'smooth', 'settle', 'supportedClass', 'fallbackClass']);
 		let needsMaps = false;
 		if (patch) {
 			for (const k of Object.keys(patch) as (keyof LiquidGlassOptions)[]) {
@@ -357,11 +351,12 @@ export class LiquidGlass {
 		if (this._ro) this._ro.disconnect();
 		if (this._mo) this._mo.disconnect();
 		this._detachShared(); // refcount the shared filter
-		if (this._filterNode) this._filterNode.remove();
-		if (this._supportClassApplied) {
-			this.el.classList.remove(this._supportClassApplied);
-			this._supportClassApplied = null;
+		if (this._settleTimer !== null) {
+			window.clearTimeout(this._settleTimer);
+			this._settleTimer = null;
 		}
+		if (this._filterNode) this._filterNode.remove();
+		this._setSupportClass(null);
 		this.el.style.setProperty('backdrop-filter', this._prevBackdrop);
 		this.el.classList.remove('has-liquid-glass');
 	}
@@ -369,27 +364,54 @@ export class LiquidGlass {
 	/* ------------------------- internals ------------------------- */
 
 	/**
-	 * Sync the capability class on the element: `supportedClass` when SVG
-	 * `backdrop-filter` works, `fallbackClass` when the CSS fallback is
-	 * active. Idempotent - swaps the class if the options or the detected
-	 * capability changed.
+	 * Sync the capability class(es) on the element: `supportedClass` when
+	 * SVG `backdrop-filter` works, `fallbackClass` when the CSS fallback
+	 * is active. Idempotent - swaps the class set if the options or the
+	 * detected capability changed.
 	 */
 	private _applySupportClasses(): void {
+		this._setSupportClass(checkSvgBackdropSupport() ? this.options.supportedClass : this.options.fallbackClass);
+	}
+
+	/** Swap the capability class set: removes exactly the classes applied
+	 * last time, then applies the new ones. `classList.remove` throws on
+	 * space-separated strings, so everything goes through tokens. */
+	private _setSupportClass(cls: string | null): void {
 		const el = this.el;
 		if (this._supportClassApplied) {
-			el.classList.remove(this._supportClassApplied);
+			for (const c of this._supportClassApplied.split(/\s+/)) {
+				if (c) el.classList.remove(c);
+			}
 			this._supportClassApplied = null;
 		}
-		const cls = checkSvgBackdropSupport() ? this.options.supportedClass : this.options.fallbackClass;
 		if (cls) {
-			el.classList.add(cls);
-			this._supportClassApplied = cls;
+			const tokens = cls.split(/\s+/).filter(Boolean);
+			if (tokens.length) {
+				el.classList.add(...tokens);
+				this._supportClassApplied = tokens.join(' ');
+			}
 		}
 	}
 
 	/** Dispatch a typed event on the target element. */
 	private _emit<K extends keyof LiquidGlassEvents & string>(type: K, detail: LiquidGlassEvents[K]): void {
 		this.el.dispatchEvent(new CustomEvent<LiquidGlassEvents[K]>(type, {detail}));
+	}
+
+	/**
+	 * Settle mode: geometry is churning (radius or shape change) - show the
+	 * plain CSS `fallback` immediately and debounce the re-bake until the
+	 * geometry has been quiet for `settle` ms, instead of re-baking on
+	 * every throttle tick while a morph is still in flight.
+	 */
+	private _enterSettle(): void {
+		if (this._settleTimer !== null) window.clearTimeout(this._settleTimer);
+		this.el.style.setProperty('backdrop-filter', this.options.fallback);
+		this.el.style.setProperty('-webkit-backdrop-filter', this.options.fallback);
+		this._settleTimer = window.setTimeout(() => {
+			this._settleTimer = null;
+			if (!this._destroyed) this.refresh();
+		}, this.options.settle);
 	}
 
 	/**
@@ -421,6 +443,10 @@ export class LiquidGlass {
 			}
 			if (m.tileKey === curKey) {
 				this.relayout(m.W, m.H); // cheap: re-position tiles only
+			} else if (this.options.settle > 0) {
+				// Settle mode: the geometry is churning - drop to the cheap
+				// fallback now and re-bake once it has been quiet.
+				this._enterSettle();
 			} else {
 				this._schedule(); // re-bake (throttled)
 			}
@@ -573,6 +599,8 @@ export class LiquidGlass {
 		node.build(this._filterId(), this._tiles!, W, H, {
 			blur: o.blur,
 			scale: this._filterScale(),
+			dispersion: o.dispersion,
+			smooth: o.smooth,
 			saturate: o.saturate,
 			rimSaturation: o.specular.saturation,
 			rimOpacity: o.specular.opacity,

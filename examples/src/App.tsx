@@ -70,7 +70,10 @@ export default function App() {
 	const [thickness, setThickness] = useState(52);
 	const [ior, setIor] = useState(1.5);
 	const [scale, setScale] = useState(1);
-	const [blur, setBlur] = useState(0.2);
+	const [blur, setBlur] = useState(0);
+	const [smooth, setSmooth] = useState(0.15);
+	const [dispersion, setDispersion] = useState(0);
+	const [maxDecay, setMaxDecay] = useState(1);
 	const [sat, setSat] = useState(6);
 	const [rimOpacity, setRimOpacity] = useState(0.4);
 	const [angle, setAngle] = useState(65);
@@ -94,10 +97,29 @@ export default function App() {
 			ior,
 			scale,
 			blur,
+			smooth,
+			dispersion,
+			maxDecay,
 			renderScale: rsAuto ? 'auto' : rsExplicit,
 			specular: {saturation: sat, opacity: rimOpacity, angle, width: rimWidth},
 		}),
-		[surface, bezel, thickness, ior, scale, blur, rsAuto, rsExplicit, sat, rimOpacity, angle, rimWidth],
+		[
+			surface,
+			bezel,
+			thickness,
+			ior,
+			scale,
+			blur,
+			smooth,
+			dispersion,
+			maxDecay,
+			rsAuto,
+			rsExplicit,
+			sat,
+			rimOpacity,
+			angle,
+			rimWidth,
+		],
 	);
 	const cardOptions = useMemo<LiquidGlassOptions>(() => ({...options, debug: true}), [options]);
 
@@ -203,6 +225,9 @@ export default function App() {
 				<Slider label='Refractive index' value={ior} min={1} max={2.5} step={0.01} onChange={setIor} />
 				<Slider label='Refraction level' value={scale} min={0} max={2} step={0.01} onChange={setScale} />
 				<Slider label='Backdrop blur' value={blur} min={0} max={8} step={0.1} onChange={setBlur} />
+				<Slider label='Smooth' value={smooth} min={0} max={1.5} step={0.05} onChange={setSmooth} />
+				<Slider label='Dispersion' value={dispersion} min={0} max={0.5} step={0.01} onChange={setDispersion} />
+				<Slider label='Fold guard' value={maxDecay} min={0} max={1} step={0.05} onChange={setMaxDecay} />
 
 				<div className='row'>
 					<span>

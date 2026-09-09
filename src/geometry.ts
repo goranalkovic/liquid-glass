@@ -122,39 +122,16 @@ export function tileExtent(radii: CornerRadii, bezel: number): number {
 /**
  * Resolve the effective bake resolution multiplier - the quality knob.
  *
- * `'auto'` scales with **how large the element renders** (geometric mean
- * of its w×h): tiny chips read clean at 0.75× - at that size the
- * softness is imperceptible and the bake is nearly free - while large
- * surfaces climb to 2×, where the effect covers enough screen area for
- * detail to matter. Element size, not devicePixelRatio, drives this:
- * DPR varies wildly across devices while the perceived difference
- * between 1× and 2× on a small phone screen is negligible, making
- * density a misleading - and costly - quality signal.
- *
- * The tiers sit exactly on the display grid (0.75×, 1×, 1.5×, 2×). An
- * earlier experiment offset them 5% off-grid so the display's bilinear
- * resampling would decorrelate residual dither grain - but the constant
- * misalignment itself read as shimmer/glitches on the displaced content,
- * so grid-aligned tiers won.
- *
- * Bake cost itself is capped by the tile extent (max corner radius +
- * bezel): small tiles may exceed the 2× default cap, large ones never
- * do. Explicit numbers are the override and clamp to [0.5, 4].
- *
- * @param tileExtentPx Largest tile dimension (px); omitted →
- *        conservative 2× cap (used for the full-size debug map).
+ * `'auto'` bakes every element at 1.25× - uniform quality regardless of
+ * size. With the slope-bounded displacement field this captures the rim
+ * and the corner-arc vector rotation with no visible loss versus 2×,
+ * at ~39% of the bake cost (every auto bake is also supersampled at
+ * least 2×, so the quantization dither is averaged into sub-level
+ * precision). Explicit numbers are the override and clamp to [0.5, 4].
  */
-export function resolveRenderScale(
-	o: LiquidGlassResolvedOptions,
-	W: number,
-	H: number,
-	tileExtentPx = Infinity,
-): number {
+export function resolveRenderScale(o: LiquidGlassResolvedOptions): number {
 	if (o.renderScale !== 'auto') return clamp(o.renderScale || 1, 0.5, 4);
-	const dim = Math.sqrt(Math.max(1, W) * Math.max(1, H)); // avg dimension
-	const base = dim <= 150 ? 0.75 : dim <= 300 ? 1 : dim <= 450 ? 1.5 : 2;
-	const cap = tileExtentPx <= 72 ? 3 : tileExtentPx <= 144 ? 2.5 : 2;
-	return clamp(base, 0.75, cap);
+	return 1.25;
 }
 
 /**
@@ -166,5 +143,7 @@ export function resolveRenderScale(
  */
 export function bakeSignature(o: LiquidGlassResolvedOptions, bezel: number, thickness: number, res: number): string {
 	const sp = o.specular;
-	return [o.surface, o.ior, res, bezel.toFixed(2), thickness.toFixed(2), sp.angle, sp.width, sp.gray].join('|');
+	return [o.surface, o.ior, res, bezel.toFixed(2), thickness.toFixed(2), o.maxDecay, sp.angle, sp.width, sp.gray].join(
+		'|',
+	);
 }
